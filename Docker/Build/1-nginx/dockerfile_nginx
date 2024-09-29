@@ -1,0 +1,26 @@
+# Używamy oficjalnego obrazu nginx jako bazowego
+FROM nginx:latest
+
+# Aktualizujemy system i instalujemy dodatkowe narzędzia
+RUN apt-get update && apt-get install -y \
+    vim \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Kopiujemy naszą konfigurację nginx
+# COPY nginx.conf /etc/nginx/nginx.conf
+
+# Kopiujemy pliki statyczne naszej strony
+COPY index.html /usr/share/nginx/html/index.html
+
+# Eksponujemy port 80
+EXPOSE 80
+
+# Ustawiamy zmienną środowiskową
+ENV NGINX_HOST localhost
+
+# Definiujemy wolumin dla logów
+VOLUME /var/log/nginx
+
+# Uruchamiamy nginx w trybie foreground
+CMD ["nginx", "-g", "daemon off;"]
