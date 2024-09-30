@@ -101,3 +101,37 @@ Przykłady zastosowań:
    `docker run image_name --custom-config`
 
 Wybór między CMD a ENTRYPOINT zależy od konkretnego przypadku użycia i tego, jak elastyczny lub ściśle zdefiniowany ma być kontener.
+
+
+Instrukcje dotyczące używania polecenia docker build:
+
+1. Podstawowe użycie:
+   - Składnia: `docker build [opcje] ścieżka_do_kontekstu`
+   - Przykład: `docker build .`
+   
+2. Nadawanie nazwy i tagu obrazowi:
+   - Użyj flagi `-t` lub `--tag`
+   - Przykład: `docker build -t moja_aplikacja:v1.0 .`
+
+3. Określanie niestandardowego pliku Dockerfile:
+   - Użyj flagi `-f` lub `--file`
+   - Przykład: `docker build -f Dockerfile.dev -t moja_aplikacja:dev .`
+
+4. Budowanie z użyciem zmiennych ARG:
+   - Użyj flagi `--build-arg`
+   - Przykład: `docker build --build-arg VERSION=1.2.3 -t moja_aplikacja:v1.2.3 .`
+
+5. Budowanie bez użycia cache:
+   - Użyj flagi `--no-cache`
+   - Przykład: `docker build --no-cache -t moja_aplikacja:latest .`
+
+6. Budowanie dla konkretnej platformy:
+   - Użyj flagi `--platform`
+   - Przykład: `docker build --platform linux/amd64 -t moja_aplikacja:amd64 .`
+
+7. Wyświetlanie szczegółowych informacji podczas budowania:
+   - Użyj flagi `--progress=plain`
+   - Przykład: `docker build --progress=plain -t moja_aplikacja .`
+
+Pamiętaj, że kontekst budowania (zazwyczaj oznaczany jako `.` na końcu polecenia) to ścieżka do katalogu zawierającego Dockerfile i inne pliki potrzebne do zbudowania obrazu.
+
