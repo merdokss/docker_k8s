@@ -2,7 +2,7 @@
 
 ### Pod, ReplicaSet
 - Utworzyć ReplicaSet dla aplikacji nginx z 4 replikami. Wykonać testy usunięcia podów i zweryfikować czas uruchomienia nowych podów.
-- Utworzyć ReplicaSet dla aplikacji nginx z 4 replikami oraz obiekt Service typu ClusterIP, wystawiając go na zewnątrz na porcie 88.
+- Utworzyć ReplicaSet dla aplikacji nginx z 4 replikami oraz obiekt Service typu ClusterIP (port 88) oraz zweryfikowac czy działa poprzez port-forward.
 - Utworzyć dwa pody z nginx z etykietą app=nginx oraz dwa pody z httpd z etykietą app=nginx. Dodatkowo utworzyć Service typu LoadBalancer (z etykietą app=nginx) i sprawdzić, jak działa ruch sieciowy.
 
 ### Deployment, LivenessProbe, Resources 
@@ -17,7 +17,16 @@
 
 ### App + DB
 - Uruchomić aplikację ToDoS na Kubernetes - zgodnie z dostępnym docker-compose.yaml. 
-- Uruchomić WordPress oraz bazę danych na Kubernetes.
 
 ### Docker + Kubernetes
 - Zbudowac aplikacje własną (lub .NET z przykładu), następnie zrobic push do zewnętrznego registry. Następnie przygotowac odpowiednie obiekty Kubernetes (Deployment, Service etc) i uruchomic aplikacje na Kubernetes.
+
+
+adres: k8sdockerreg.azurecr.io
+user: k8sdockerreg
+pass: C/saKrjF9+vOK73mSs7Hg/vRGE6PtnzcdF5yoWgbTW+ACRDpmxGX
+
+> docker login k8sdockerreg.azurecr.io
+Username: k8sdockerreg
+Password: 
+Login Succeeded

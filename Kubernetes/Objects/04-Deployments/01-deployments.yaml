@@ -1,11 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx
+  name: nginx-reg-test
   labels:
     app: nginx
 spec:
-  replicas: 1
+  replicas: 5
   selector:
     matchLabels:
       app: nginx
@@ -16,8 +16,11 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx
+          image: k8sdockerreg.azurecr.io/httpd:1.0
+          imagePullPolicy: IfNotPresent
           ports:
             - name: nginx
               protocol: TCP
               containerPort: 80
+      imagePullSecrets:
+        - name: azure-reg
