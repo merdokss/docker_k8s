@@ -1,0 +1,27 @@
+# .gitignore
+
+# Pliki systemowe
+.DS_Store
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.sln.ide
+*.vscode/
+*.dbmdl
+*.dbproj.schemaview
+*.jfm
+*.pdb
+*.mdb
+*.cache
+*.log
+
