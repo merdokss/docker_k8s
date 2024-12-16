@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-reg-test
+  labels:
+    app: nginx
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: k8sdockerreg.azurecr.io/httpd:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: nginx
+              protocol: TCP
+              containerPort: 80
+      imagePullSecrets:
+        - name: azure-reg
