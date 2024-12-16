@@ -21,12 +21,3 @@
 ### Docker + Kubernetes
 - Zbudowac aplikacje własną (lub .NET z przykładu), następnie zrobic push do zewnętrznego registry. Następnie przygotowac odpowiednie obiekty Kubernetes (Deployment, Service etc) i uruchomic aplikacje na Kubernetes.
 
-
-adres: k8sdockerreg.azurecr.io
-user: k8sdockerreg
-pass: C/saKrjF9+vOK73mSs7Hg/vRGE6PtnzcdF5yoWgbTW+ACRDpmxGX
-
-> docker login k8sdockerreg.azurecr.io
-Username: k8sdockerreg
-Password: 
-Login Succeeded
