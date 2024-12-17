@@ -71,3 +71,6 @@ W Kubernetes istnieje kilka sposobów tworzenia ConfigMap, w zależności od źr
    ```sh
    kubectl create configmap <nazwa-configmap> --from-env-file=<ścieżka-do-pliku-env>
    ```
+
+### ConfigMap dla Apache
+- `kubectl create configmap httpd-conf --from-file=Kubernetes/Objects/05-SecretsConfigMaps/httpd.conf` - Tworzy ConfigMap z pliku konfiguracyjnego Apach
