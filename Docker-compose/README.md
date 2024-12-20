@@ -6,6 +6,8 @@
 - [Kluczowe flagi i ich zastosowanie](#kluczowe-flagi-i-ich-zastosowanie)
 - [Przykłady praktyczne](#przykłady-praktyczne)
 - [Najlepsze praktyki](#najlepsze-praktyki)
+- [Konfiguracja docker-compose](#konfiguracja-docker-compose)
+
 
 ## Wprowadzenie
 
@@ -152,7 +154,7 @@ Najczęstsze problemy i ich rozwiązania:
    - Sprawdź, czy porty nie są już zajęte
    - Zmień mapowanie portów w docker-compose.yml
 
-## Konfiguracja docker-compose.yml
+## Konfiguracja docker-compose
 
 Docker Compose wykorzystuje plik YAML do konfiguracji usług, sieci, wolumenów i innych zasobów. Poniżej znajduje się szczegółowy opis najważniejszych pól konfiguracyjnych.
 
