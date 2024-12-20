@@ -192,6 +192,26 @@ services:
 volumes:
   db-data:
 ```
+### wait-for-it.sh
+
+```
+#!/bin/bash
+
+# Host i port z argumentów
+host="$1"
+port="$2"
+
+# Funkcja testująca połączenie
+until nc -z "$host" "$port"; do
+  echo "Czekam na $host:$port..."
+  sleep 1
+done
+
+echo "$host:$port jest dostępny"
+
+# Uruchom właściwą komendę (wszystko po --)
+exec "${@:2}"
+```
 
 ### .env
 ```

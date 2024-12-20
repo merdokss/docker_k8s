@@ -28,8 +28,8 @@ services:
       - frontend
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 30s
+      test: ["CMD", "curl", "-f", "http://localhost:88"]
+      interval: 10s
       timeout: 10s
       retries: 3
 
