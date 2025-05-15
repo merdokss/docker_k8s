@@ -16,11 +16,9 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: k8sdockerreg.azurecr.io/httpd:1.0
+          image: nginx
           imagePullPolicy: IfNotPresent
           ports:
             - name: nginx
               protocol: TCP
               containerPort: 80
-      imagePullSecrets:
-        - name: azure-reg

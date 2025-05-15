@@ -152,9 +152,3 @@ docker-compose down -v --remove-orphans
 # Debugowanie pojedynczego kontenera
 docker-compose exec service_name bash
 ```
-
-## Rozwiązania
-
-Rozwiązania do ćwiczeń znajdują się w katalogu `solutions/`. Staraj się najpierw rozwiązać zadania samodzielnie, a dopiero potem sprawdzać rozwiązania.
-
-Pamiętaj, że może być wiele poprawnych sposobów rozwiązania każdego zadania. Rozwiązania w repozytorium są tylko jednym z możliwych podejść.
