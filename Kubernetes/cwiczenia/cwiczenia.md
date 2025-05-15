@@ -8,7 +8,6 @@
 ### Deployment, LivenessProbe, Resources 
 - Przy użyciu obiektu Deployment uruchomić aplikację httpd i ustawić LivenessProbe - weryfikacja, czy prawidłowo działa httpd.
 - Przy użyciu obiektu Deployment uruchomić bazę danych PostgreSQL - wystawić niezbędne porty, ustawić limity zasobów oraz ReadinessProbe.
-- Utworzyć Deployment dla aplikacji Redis z konfiguracją PersistentVolumeClaim, aby zapewnić trwałość danych.
 - Utworzyć Deployment dla aplikacji Node.js z konfiguracją LivenessProbe, ReadinessProbe, Resource Limits.
 
 
