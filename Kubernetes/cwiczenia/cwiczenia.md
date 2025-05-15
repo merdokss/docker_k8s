@@ -11,6 +11,7 @@
 - Utworzyć Deployment dla aplikacji Redis z konfiguracją PersistentVolumeClaim, aby zapewnić trwałość danych.
 - Utworzyć Deployment dla aplikacji Node.js z konfiguracją LivenessProbe, ReadinessProbe, Resource Limits.
 
+
 ### Troubleshooting
 - Zaimplementować definicję pod-failed.yaml i zweryfikować poprawność uruchomienia zasobów. W razie potrzeby poprawić konfigurację.
 - Zaimplementować definicję mysql-deploy.yaml i zweryfikować poprawność uruchomienia zasobów. W razie potrzeby poprawić konfigurację.
