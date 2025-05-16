@@ -38,6 +38,9 @@ brew install helm
 
 # Na Windows (przez Chocolatey)
 choco install kubernetes-helm
+
+# Na Windows (przez Winget)
+winget install Helm.Helm
 ```
 
 ## Podstawowe komendy

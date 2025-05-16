@@ -34,6 +34,3 @@ Rozszerzenie Kubernetes: [Kubernetes Tools](https://marketplace.visualstudio.com
 - [Dokumentacja Kubernetes](https://kubernetes.io/docs/)
 - [Docker Compose](https://docs.docker.com/compose/)
 - [Kubectl - narzędzie wiersza poleceń Kubernetes](https://kubernetes.io/docs/reference/kubectl/)
-
-
-

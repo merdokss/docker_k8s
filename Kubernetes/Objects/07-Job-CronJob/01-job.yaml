@@ -1,14 +1,21 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: pi
+  name: image-thumbnail-processor
+  labels:
+    app: image-processor
+    type: batch-job
 spec:
-  ttlSecondsAfterFinished: 15
   template:
+    metadata:
+      labels:
+        app: image-processor
+        type: batch-job-pod
     spec:
       containers:
-      - name: pi
-        image: perl
-        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
-      restartPolicy: Never
-  backoffLimit: 4
+      - name: thumbnail-generator
+        image: busybox:latest
+        command: ['sh', '-c', 'echo "Rozpoczynam przetwarzanie obrazów i generowanie miniaturek..."; for i in 1 2 3 4 5; do echo "Przetwarzam obraz $i..."; sleep 2; done; echo "Zakończono generowanie miniaturek."']
+      restartPolicy: OnFailure # Spróbuj ponownie w przypadku błędu
+  backoffLimit: 3 # Liczba prób ponowienia przed oznaczeniem Joba jako nieudany
+  ttlSecondsAfterFinished: 100 # Automatycznie usuń Job po 100 sekundach od zakończenia

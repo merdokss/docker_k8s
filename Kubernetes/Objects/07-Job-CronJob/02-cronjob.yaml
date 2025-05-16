@@ -1,19 +1,25 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: hello
+  name: temp-files-cleanup
+  labels:
+    app: maintenance
+    type: scheduled-task
 spec:
-  schedule: "* * * * *"
+  schedule: "0 2 * * *"  # Codziennie o 2:00 w nocy
   jobTemplate:
     spec:
       template:
+        metadata:
+          labels:
+            app: maintenance
+            type: cleanup-pod
         spec:
           containers:
-          - name: hello
-            image: busybox:1.28
-            imagePullPolicy: IfNotPresent
-            command:
-            - /bin/sh
-            - -c
-            - date; echo Hello from the Kubernetes cluster
+          - name: cleanup-worker
+            image: busybox:latest
+            command: ['sh', '-c', 'echo "Rozpoczynam czyszczenie starych plików tymczasowych..."; sleep 10; echo "Zakończono czyszczenie plików tymczasowych."']
           restartPolicy: OnFailure
+  concurrencyPolicy: Forbid # Nie uruchamiaj nowego zadania, jeśli poprzednie jeszcze działa
+  successfulJobsHistoryLimit: 3 # Przechowuj historię 3 udanych Jobów
+  failedJobsHistoryLimit: 1     # Przechowuj historię 1 nieudanego Joba 

@@ -35,6 +35,12 @@ curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64
 chmod +x ./kind && sudo mv ./kind /usr/local/bin/
 ```
 
+```bash
+# Windows i PowerShell
+curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/v0.27.0/kind-windows-amd64
+Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
+```
+
 Analogicznie dla **macOS** (`kind-darwin-arm64|amd64`) i **Windows** (`kind-windows-amd64.exe`).
 
 ### 2. `go install`

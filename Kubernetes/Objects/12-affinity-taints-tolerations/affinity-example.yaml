@@ -1,0 +1,99 @@
+# Pierwszy pod - Frontend aplikacji
+# Używa nodeAffinity do preferowania węzłów z SSD
+# preferredDuringSchedulingIgnoredDuringExecution oznacza, że:
+# - Preferuje węzły z etykietą disktype=ssd
+# - Jeśli pod jest już uruchomiony, a węzeł straci tę etykietę, pod nadal będzie działał
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-frontend
+  labels:
+    app: my-app
+    component: frontend
+spec:
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: disktype
+            operator: In
+            values:
+            - ssd
+  containers:
+  - name: frontend-container
+    image: nginx:latest
+    ports:
+    - containerPort: 80
+
+---
+
+# Drugi pod - Backend aplikacji
+# Używa podAffinity do wymuszenia uruchomienia na tym samym węźle co frontend
+# requiredDuringSchedulingIgnoredDuringExecution oznacza, że:
+# - Musi być uruchomiony na tym samym węźle co pod z etykietami app=my-app i component=frontend
+# - Jeśli pod jest już uruchomiony, a frontend zostanie przeniesiony, backend nadal będzie działał
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-backend
+  labels:
+    app: my-app
+    component: backend
+spec:
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - my-app
+          - key: component
+            operator: In
+            values:
+            - frontend
+        topologyKey: "kubernetes.io/hostname"
+  containers:
+  - name: backend-container
+    image: busybox
+    command: ['sh', '-c', 'echo Backend running; sleep 3600']
+
+---
+
+# Deployment usługi krytycznej (Redis)
+# Używa podAntiAffinity do wymuszenia rozproszenia podów na różnych węzłach
+# requiredDuringSchedulingIgnoredDuringExecution oznacza, że:
+# - Każdy pod z etykietą app=critical-service musi być na innym węźle
+# - Zapewnia wysoką dostępność poprzez rozproszenie replik
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: critical-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: critical-service
+  template:
+    metadata:
+      labels:
+        app: critical-service
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - critical-service
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: critical-service-container
+        image: redis:alpine
+        ports:
+        - containerPort: 6379 

@@ -1,0 +1,11 @@
+# sc.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard-local # Możesz nazwać ją inaczej
+provisioner: kubernetes.io/no-provisioner
+# Dla ręcznego tworzenia PV, użyłbyś:
+# provisioner: kubernetes.io/no-provisioner
+# volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete # Co zrobić z PV po usunięciu PVC
+allowVolumeExpansion: true # Czy wolno rozszerzać wolumin 
