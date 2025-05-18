@@ -22,133 +22,70 @@ Stworzenie prostej kompozycji Docker z jednym kontenerem nginx.
 - Wyświetla się własna treść HTML
 - Kompozycja uruchamia się bez błędów
 
-## Ćwiczenie 2: Multi-container setup
+## Ćwiczenie 2: Aplikacja wielokontenerowa
 ### Cel
-Stworzenie aplikacji składającej się z frontendu (nginx) i backendu (python).
+Stworzenie kompozycji z wieloma kontenerami - aplikacja webowa z bazą danych.
 
 ### Zadanie
-1. Stwórz prosty backend w Pythonie (Flask) zwracający JSON
-2. Skonfiguruj nginx jako proxy do backendu
-3. Połącz oba kontenery w jednej kompozycji
+1. Utwórz plik `docker-compose.yml` z dwoma usługami: (np: Docker-compose/3-docker-compose-shoppinglist)
+   - Aplikacja webowa (np. Node.js lub Python)
+   - Baza danych PostgreSQL
+2. Skonfiguruj połączenie między aplikacją a bazą danych
+3. Dodaj zmienne środowiskowe dla konfiguracji
 
 ### Wskazówki
-- Backend powinien nasłuchiwać na porcie 5000
-- Nginx powinien przekierowywać żądania do `/api` na backend
-- Użyj networks do komunikacji między kontenerami
+- Użyj oficjalnych obrazów dla aplikacji i bazy danych
+- Skonfiguruj sieć między kontenerami
+- Wykorzystaj zmienne środowiskowe dla haseł i konfiguracji
 
 ### Oczekiwany efekt
-- Endpoint `/api/status` zwraca JSON ze statusem
-- Frontend może komunikować się z backendem
-- Oba kontenery są w tej samej sieci
+- Aplikacja działa poprawnie
+- Baza danych jest dostępna dla aplikacji
+- Dane są persystowane między uruchomieniami
 
-## Ćwiczenie 3: Zarządzanie zależnościami
+## Ćwiczenie 3: Skalowanie i zarządzanie
 ### Cel
-Stworzenie aplikacji z bazą danych i mechanizmem wait-for-it.
+Poznanie zaawansowanych funkcji Docker Compose - skalowanie i zarządzanie kontenerami.
 
 ### Zadanie
-1. Dodaj bazę danych PostgreSQL do kompozycji
-2. Skonfiguruj backend do łączenia z bazą
-3. Zaimplementuj mechanizm oczekiwania na gotowość bazy
+1. Rozszerz poprzednią kompozycję o:
+   - Skalowanie aplikacji webowej do 3 instancji
+   - Dodanie load balancera (np. Nginx)
+   - Konfigurację healthchecków
 
 ### Wskazówki
-- Użyj depends_on w docker-compose
-- Zaimplementuj skrypt healthcheck
-- Dodaj zmienne środowiskowe dla konfiguracji bazy
+- Użyj `docker-compose up --scale` do skalowania
+- Skonfiguruj load balancer do rozdzielania ruchu
+- Dodaj healthchecki dla każdej usługi
 
 ### Oczekiwany efekt
-- Aplikacja uruchamia się w prawidłowej kolejności
-- Backend czeka na gotowość bazy
-- Dane są prawidłowo zapisywane w bazie
+- Aplikacja działa w trybie skalowanym
+- Ruch jest równomiernie rozdzielany
+- System jest odporny na awarie pojedynczych instancji
 
-## Ćwiczenie 4: Środowiska deweloperskie
+## Ćwiczenie 4: Uruchomienie aplikacji ToDos
 ### Cel
-Konfiguracja środowiska developerskiego z hot-reload.
+Uruchomienie aplikacji ToDos przy użyciu docker-compose (Docker-compose/5-ToDos)
 
 ### Zadanie
-1. Skonfiguruj środowisko dla frontendu (np. React) z hot-reload
-2. Dodaj volumes dla kodu źródłowego
-3. Zaimplementuj automatyczne przeładowanie backendu
+1. Utwórz kompozycję zawierającą:
+   - Frontend (aplikacja React)
+   - Backend (aplikacja Node.js)
+   - Bazę danych MongoDB
+   - MongoDB Express (interfejs administracyjny)
+2. Skonfiguruj połączenia między komponentami
+3. Przetestuj funkcjonalność CRUD dla zadań
 
 ### Wskazówki
-- Użyj odpowiednich volumes dla node_modules
-- Skonfiguruj nodemon dla backendu
-- Pamiętaj o zmiennych środowiskowych dla trybów dev/prod
+- Wykorzystaj volumes do montowania danych dla MongoDB
+- Skonfiguruj zmienne środowiskowe dla połączeń
 
 ### Oczekiwany efekt
-- Zmiany w kodzie są widoczne bez restartu kontenerów
-- node_modules nie są synchronizowane z hostem
-- Debugger działa poprawnie
+- Frontend dostępny pod adresem `http://localhost:3000`
+- Backend API dostępne pod adresem `http://localhost:3001`
+- MongoDB Express dostępny pod adresem `http://localhost:8081`
+- Automatyczne odświeżanie zmian w kodzie frontendu i backendu
+- Możliwość zarządzania danymi przez MongoDB Express
+- Poprawne zapisywanie i odczytywanie zadań z bazy danych
 
-## Ćwiczenie 5: Deployment stack
-### Cel
-Przygotowanie stacku deploymentowego z monitoringiem.
-
-### Zadanie
-1. Dodaj Prometheus do monitorowania
-2. Skonfiguruj Grafana dla wizualizacji metryk
-3. Zaimplementuj backup bazy danych
-
-### Wskazówki
-- Użyj named volumes dla danych Prometheus i Grafana
-- Skonfiguruj retention policy dla backupów
-- Dodaj basic auth dla dostępu do monitoringu
-
-### Oczekiwany efekt
-- Metryki są zbierane i wizualizowane
-- Backup działa automatycznie
-- Stack jest zabezpieczony podstawowym auth
-
-## Zadanie dodatkowe: Load Balancing
-### Cel
-Implementacja load balancingu dla aplikacji.
-
-### Zadanie
-1. Skonfiguruj wiele instancji backendu
-2. Dodaj nginx jako load balancer
-3. Zaimplementuj sticky sessions
-
-### Wskazówki
-- Użyj scale w docker-compose
-- Skonfiguruj upstream w nginx
-- Rozważ użycie redis dla sesji
-
-### Oczekiwany efekt
-- Load balancing działa poprawnie
-- Sesje są zachowane między requestami
-- System zachowuje wysoką dostępność
-
-## Wskazówki do rozwiązywania problemów
-
-### Debugowanie kompozycji
-1. Używaj `docker-compose logs` do sprawdzania logów
-2. Sprawdzaj status kontenerów przez `docker-compose ps`
-3. Testuj pojedyncze komponenty przed integracją
-
-### Najczęstsze problemy
-1. Problemy z uprawnieniami do volumes
-   - Sprawdź uprawnienia w kontenerze
-   - Zweryfikuj właściciela plików na hoście
-
-2. Problemy z siecią
-   - Sprawdź konfigurację networks
-   - Zweryfikuj nazwy hostów między kontenerami
-
-3. Problemy z zależnościami
-   - Użyj wait-for-it lub podobnych skryptów
-   - Dodaj proper healthchecks
-
-## Przydatne komendy
-
-```bash
-# Sprawdzanie logów
-docker-compose logs -f service_name
-
-# Skalowanie usługi
-docker-compose up -d --scale backend=3
-
-# Czyszczenie środowiska
-docker-compose down -v --remove-orphans
-
-# Debugowanie pojedynczego kontenera
-docker-compose exec service_name bash
-```
+## Ćwiczenie 5: Zbudowac i wypchac obrazy docker dla aplikacji ToDos(FE, BE) do zewnętrzego Registry

@@ -14,8 +14,6 @@ spec:
       labels:
         app: nginx
     spec:
-      imagePullSecrets:
-        - name: nazwa-twojego-sekretu
       containers:
         - name: nginx
           image: nginx:1.27.5
