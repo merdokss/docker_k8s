@@ -39,6 +39,23 @@ W Kubernetes istnieje kilka rodzajów Secret, które można utworzyć w zależno
    kubectl create secret service-account-token <nazwa-secreta>
    ```
 
+
+#### Przydatne komendy
+
+```bash
+# Generowanie wartości base64
+echo -n "root" | base64
+echo -n "password" | base64
+echo -n "mongodb://root:password@mongo-0.mongo:27017/todos?authSource=admin" | base64
+```
+
+``` bash
+# Pobierz secret i zdekoduj konkretną wartość
+kubectl get secret mongodb-secret -o jsonpath='{.data.mongodb-root-username}' | base64 --decode
+kubectl get secret mongodb-secret -o jsonpath='{.data.mongodb-root-password}' | base64 --decode
+kubectl get secret mongodb-secret -o jsonpath='{.data.mongodb-uri}' | base64 --decode
+```
+
 ### ConfigMaps
 ConfigMap w Kubernetes to obiekt przechowujący dane konfiguracyjne w postaci par klucz-wartość. Umożliwia to oddzielenie konfiguracji od kodu aplikacji.
 
