@@ -16,7 +16,7 @@ spec:
       - name: external-registry
       containers:
       - name: web
-        image: dawid.azurecr.io/todos-be
+        image: dawid.azurecr.io/todos-fe
         ports:
         - containerPort: 3000
         env:
