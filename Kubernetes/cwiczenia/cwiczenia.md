@@ -15,9 +15,8 @@
 - Zaimplementować definicję pod-failed.yaml i zweryfikować poprawność uruchomienia zasobów. W razie potrzeby poprawić konfigurację.
 - Zaimplementować definicję mysql-deploy.yaml i zweryfikować poprawność uruchomienia zasobów. W razie potrzeby poprawić konfigurację.
 
+
+### Wordpress - uruchomic aplikacje wordpress + DB na Kubernetes
+
 ### App + DB
 - Uruchomić aplikację ToDoS na Kubernetes - zgodnie z dostępnym docker-compose.yaml. 
-
-### Docker + Kubernetes
-- Zbudowac aplikacje własną (lub .NET z przykładu), następnie zrobic push do zewnętrznego registry. Następnie przygotowac odpowiednie obiekty Kubernetes (Deployment, Service etc) i uruchomic aplikacje na Kubernetes.
-

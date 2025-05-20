@@ -66,39 +66,39 @@ kubectl explain [obiekt]
 ### Podstawowe komendy do eventów
 ```bash
 # Wyświetlenie wszystkich eventów
-kubectl events
+kubectl get events
 
 # Wyświetlenie eventów w formacie YAML
-kubectl events -o yaml
+kubectl get events -o yaml
 
 # Wyświetlenie eventów w formacie JSON
-kubectl events -o json
+kubectl get events -o json
 ```
 
 ### Filtrowanie eventów
 ```bash
 # Filtrowanie po typie eventu
-kubectl events --field-selector type=Warning
-kubectl events --field-selector type=Normal
+kubectl get events --field-selector type=Warning
+kubectl get events --field-selector type=Normal
 
 # Filtrowanie po namespace
-kubectl events -n default
+kubectl get events -n default
 
 # Filtrowanie po zasobie
-kubectl events --field-selector involvedObject.kind=Pod
-kubectl events --field-selector involvedObject.name=nazwa-poda
+kubectl get events --field-selector involvedObject.kind=Pod
+kubectl get events --field-selector involvedObject.name=nazwa-poda
 
 # Filtrowanie po czasie
-kubectl events --field-selector lastTimestamp>$(date -d "5 minutes ago" -Iseconds)
+kubectl get events --field-selector lastTimestamp>$(date -d "5 minutes ago" -Iseconds)
 ```
 
 ### Sortowanie eventów
 ```bash
 # Sortowanie po czasie
-kubectl events --sort-by='.lastTimestamp'
+kubectl get events --sort-by='.lastTimestamp'
 
 # Sortowanie po typie
-kubectl events --sort-by='.type'
+kubectl get events --sort-by='.type'
 ```
 
 
