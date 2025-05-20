@@ -20,3 +20,8 @@
 
 ### App + DB
 - Uruchomić aplikację ToDoS na Kubernetes - zgodnie z dostępnym docker-compose.yaml. 
+1. FE i BE deploy
+2. FE i BE Services
+3. MongoDB jako Deploy bez PV
+4. Określic i wdrozyc livessprobe oraz readinessprobe dla BE i FE
+5. 
