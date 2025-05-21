@@ -54,6 +54,7 @@ go install sigs.k8s.io/kind@v0.27.0
 ```bash
 brew install kind      # macOS
 choco install kind     # Windows / Chocolatey
+winget install Kubernetes.kind #Windows
 ```
 
 ---
