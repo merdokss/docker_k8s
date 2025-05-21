@@ -3,6 +3,7 @@ kind: Ingress
 metadata:
   name: example-ingress-no-ssl
 spec:
+  ingressClassName: nginx
   rules:
   - host: example.com
     http:
@@ -11,6 +12,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: example-service
+            name: example-app
             port:
               number: 80

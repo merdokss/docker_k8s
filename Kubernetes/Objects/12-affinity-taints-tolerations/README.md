@@ -13,7 +13,7 @@ Istnieją dwa główne typy affinity/anti-affinity:
     *   **`requiredDuringSchedulingIgnoredDuringExecution`**: Twarde wymaganie. Pod zostanie uruchomiony tylko na węźle spełniającym warunki. Jeśli żaden węzeł nie spełnia warunków, Pod nie zostanie uruchomiony. Zmiany etykiet węzła w trakcie działania Poda nie mają wpływu.
     *   **`preferredDuringSchedulingIgnoredDuringExecution`**: Miękkie wymaganie (preferencja). Scheduler postara się umieścić Poda na węźle spełniającym warunki, ale jeśli to niemożliwe, Pod zostanie uruchomiony na innym węźle. Zmiany etykiet węzła w trakcie działania Poda nie mają wpływu.
 
-2.  **Inter-pod Affinity/Anti-affinity:**
+2.  **Pod Affinity/Anti-affinity:**
     *   Pozwala określić, że Pody powinny (lub nie powinny) być uruchamiane na tym samym węźle (lub w tej samej strefie/regionie), co inne Pody spełniające określone kryteria (bazujące na ich etykietach).
     *   Przydatne do kolokacji Podów, które często ze sobą komunikują (affinity) lub do rozpraszania Podów w celu zapewnienia wysokiej dostępności (anti-affinity).
     *   Podobnie jak Node Affinity, posiada typy `requiredDuringSchedulingIgnoredDuringExecution` i `preferredDuringSchedulingIgnoredDuringExecution`.
@@ -22,8 +22,8 @@ Istnieją dwa główne typy affinity/anti-affinity:
 ### Przykłady użycia Affinity/Anti-affinity:
 *   **Node Affinity:** Uruchamianie Podów wymagających specjalistycznego sprzętu (np. GPU) tylko na węzłach z tym sprzętem.
 *   **Node Anti-affinity:** Unikanie uruchamiania Podów na węzłach, które są przeznaczone do innych celów.
-*   **Inter-pod Affinity:** Umieszczanie frontendu aplikacji blisko jej backendu na tym samym węźle, aby zminimalizować opóźnienia sieciowe.
-*   **Inter-pod Anti-affinity:** Rozmieszczanie replik bazy danych na różnych węzłach (lub w różnych strefach), aby zapobiec utracie danych w przypadku awarii jednego węzła/strefy.
+*   **Pod Affinity:** Umieszczanie frontendu aplikacji blisko jej backendu na tym samym węźle, aby zminimalizować opóźnienia sieciowe.
+*   **Pod Anti-affinity:** Rozmieszczanie replik bazy danych na różnych węzłach (lub w różnych strefach), aby zapobiec utracie danych w przypadku awarii jednego węzła/strefy.
 
 ## Taints i Tolerations
 
