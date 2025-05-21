@@ -7,4 +7,3 @@
 
 `kubectl create secret docker-registry external-registry --docker-server=.... --docker-username=... --docker-password=....`
 
-kubectl create secret docker-registry external-registry --docker-server=dawid.azurecr.io --docker-username=dawid --docker-password=04c21MzpgJAHVHbstJw5R2n2YlmgdHYqZCFmROFfqD+ACRC4/ny4
