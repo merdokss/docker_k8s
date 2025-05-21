@@ -4,7 +4,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: moj-dynamiczny-pvc
 spec:
-  # storageClassName: hostpath # Musi pasować do nazwy StorageClass
+  storageClassName: hostpath # Musi pasować do nazwy StorageClass
   accessModes:
     - ReadWriteOnce # Ten tryb dostępu musi być wspierany przez PV/StorageClass
   resources:

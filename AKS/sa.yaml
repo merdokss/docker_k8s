@@ -1,0 +1,6 @@
+# sa.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-user
+  namespace: kube-system

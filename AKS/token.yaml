@@ -1,0 +1,9 @@
+# token.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-user-token
+  namespace: kube-system
+  annotations:
+    kubernetes.io/service-account.name: my-user
+type: kubernetes.io/service-account-token
