@@ -1,0 +1,12 @@
+# pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-azure
+spec:
+  storageClassName: default # Musi pasować do nazwy StorageClass
+  accessModes:
+    - ReadWriteOnce # Ten tryb dostępu musi być wspierany przez PV/StorageClass
+  resources:
+    requests:
+      storage: 1Gi # Żądany rozmiar pamięci 
