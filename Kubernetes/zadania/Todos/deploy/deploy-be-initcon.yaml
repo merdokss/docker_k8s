@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      imagePullSecrets:
+      - name: external-registry
+      initContainers:
+      - name: wait-for-mongo
+        image: busybox
+        command: ['sh', '-c', 'until nc -z mongo-service 27017; do echo waiting for MongoDB...; sleep 2; done']
+      containers:
+      - name: api
+        image: dawid.azurecr.io/todos-be
+        ports:
+        - containerPort: 3001
+        readinessProbe:
+          httpGet:
+            path: /api
+            port: 3001
+          initialDelaySeconds: 20
+          periodSeconds: 5
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: mongodb-uri
