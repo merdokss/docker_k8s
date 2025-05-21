@@ -19,6 +19,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: nginx-clusterip
+            name: web-service
             port:
-              number: 88
+              number: 3000

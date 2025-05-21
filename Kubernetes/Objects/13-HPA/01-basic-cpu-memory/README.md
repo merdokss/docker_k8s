@@ -61,3 +61,8 @@ kubectl get pods -l app=example-app
 - Skalowanie w dół nastąpi po 5 minutach niskiego obciążenia
 - Maksymalnie może być utworzonych 5 podów
 - Minimalnie zawsze będzie działał 1 pod 
+
+
+### Obciązenie serwara nginx zapytaniami
+
+`python3 Kubernetes/zadania/load_test.py --url http://localhost:8080 --concurrency 500 --duration 300`
