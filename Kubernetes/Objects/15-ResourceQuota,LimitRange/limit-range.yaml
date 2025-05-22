@@ -1,0 +1,35 @@
+# LimitRange definiuje domyślne i ograniczające wartości zasobów dla podów i kontenerów
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: resource-limits
+  namespace: production  # Limity będą dotyczyć tylko namespace 'production'
+spec:
+  limits:
+  - type: Container  # Limity dla pojedynczych kontenerów
+    default:         # Domyślne wartości limitów, jeśli nie są określone w podzie
+      cpu: 500m      # 0.5 rdzenia CPU
+      memory: 512Mi  # 512 MB pamięci
+    defaultRequest:  # Domyślne wartości requestów, jeśli nie są określone w podzie
+      cpu: 100m      # 0.1 rdzenia CPU
+      memory: 128Mi  # 128 MB pamięci
+    min:             # Minimalne dozwolone wartości
+      cpu: 50m       # 0.05 rdzenia CPU
+      memory: 64Mi   # 64 MB pamięci
+    max:             # Maksymalne dozwolone wartości
+      cpu: 1000m     # 1 rdzeń CPU
+      memory: 1Gi    # 1 GB pamięci
+    maxLimitRequestRatio:  # Maksymalny stosunek limitu do requestu
+      cpu: 4              # Limit CPU może być max 4x większy niż request
+      memory: 4           # Limit pamięci może być max 4x większy niż request
+
+  - type: Pod        # Limity dla całych podów
+    max:             # Maksymalne sumaryczne wartości dla wszystkich kontenerów w podzie
+      cpu: 2000m     # 2 rdzenie CPU
+      memory: 2Gi    # 2 GB pamięci
+
+  - type: PersistentVolumeClaim  # Limity dla PVC
+    min:                        # Minimalny rozmiar wolumenu
+      storage: 1Gi             # 1 GB
+    max:                        # Maksymalny rozmiar wolumenu
+      storage: 10Gi            # 10 GB 

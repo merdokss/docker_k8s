@@ -3,7 +3,7 @@
 ## Ćwiczenie 1: Node Affinity
 
 ### Zadanie
-Utwórz deployment, który będzie uruchamiał Pody tylko na węzłach z etykietą `environment=production`.
+Utwórz deployment, który będzie uruchamiał Pody tylko na węzłach z etykietą `environment=production`. (lub znajdź odpowiedni istniejący Label na nodes z Azure)
 
 ### Rozwiązanie
 ```yaml

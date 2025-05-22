@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: isolate-namespace
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress    # Dodajemy Egress
+  ingress:
+  - from:
+    - podSelector: {}
+  egress:
+  - to:
+    - podSelector: {}  # Pozwala na komunikację tylko z Podami w tym samym namespace

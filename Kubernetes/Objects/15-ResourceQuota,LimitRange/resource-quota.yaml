@@ -1,0 +1,32 @@
+# ResourceQuota definiuje limity zasobów dla całego namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-resources
+  namespace: production  # Limity będą dotyczyć tylko namespace 'production'
+spec:
+  hard:  # Sekcja 'hard' definiuje sztywne limity, których nie można przekroczyć
+    # Limity zasobów obliczeniowych
+    requests.cpu: "4"        # Maksymalna suma requestów CPU dla wszystkich podów (4 rdzenie)
+    requests.memory: 4Gi     # Maksymalna suma requestów pamięci dla wszystkich podów (4 GB)
+    limits.cpu: "8"          # Maksymalna suma limitów CPU dla wszystkich podów (8 rdzeni)
+    limits.memory: 8Gi       # Maksymalna suma limitów pamięci dla wszystkich podów (8 GB)
+    
+    # Limity liczby obiektów
+    pods: "10"               # Maksymalna liczba podów w namespace
+    services: "5"            # Maksymalna liczba serwisów
+    persistentvolumeclaims: "3"  # Maksymalna liczba PVC (Persistent Volume Claims)
+    
+    # Limity dla load balancerów
+    services.loadbalancers: "2"  # Maksymalna liczba serwisów typu LoadBalancer
+    
+    # Limity dla NodePort
+    services.nodeports: "3"      # Maksymalna liczba serwisów typu NodePort
+    
+    # Limity dla sekretów i configmapów
+    secrets: "10"            # Maksymalna liczba sekretów
+    configmaps: "10"         # Maksymalna liczba configmapów
+    
+    # Limity dla jobów
+    jobs.batch: "5"          # Maksymalna liczba jobów
+    cronjobs.batch: "3"      # Maksymalna liczba cronjobów 
