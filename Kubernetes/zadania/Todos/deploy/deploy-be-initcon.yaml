@@ -20,7 +20,7 @@ spec:
         command: ['sh', '-c', 'until nc -z mongo-service 27017; do echo waiting for MongoDB...; sleep 2; done']
       containers:
       - name: api
-        image: dawid.azurecr.io/todos-be
+        image: dawid.azurecr.io/todo-be-rh3:1.0
         ports:
         - containerPort: 3001
         readinessProbe:
