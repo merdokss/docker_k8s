@@ -7,3 +7,6 @@
 
 `kubectl create secret docker-registry external-registry --docker-server=.... --docker-username=... --docker-password=....`
 
+## Wazne!!!
+
+Do przeprowadzenie cwiczenie i deployu przykładu konieczne będzie zbudowanie obrazów z aplikacji - Docker-compose/5-ToDos. Oraz wypchanie ich za zewnętrzne Registry Docker

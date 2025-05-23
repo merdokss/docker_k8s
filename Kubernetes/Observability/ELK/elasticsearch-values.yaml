@@ -1,41 +1,9 @@
 clusterName: "elasticsearch"
 nodeGroup: "master"
+replicas: 1
 
-roles:
-  master: "true"
-  ingest: "true"
-  data: "true"
 
 esConfig:
   elasticsearch.yml: |
     xpack.security.enabled: false
     discovery.type: single-node
-    http.port: 9200
-    transport.port: 9300
-    network.host: 0.0.0.0
-
-resources:
-  requests:
-    cpu: "1000m"
-    memory: "2Gi"
-  limits:
-    cpu: "1000m"
-    memory: "2Gi"
-
-volumeClaimTemplate:
-  accessModes: [ "ReadWriteOnce" ]
-  resources:
-    requests:
-      storage: 20Gi
-
-service:
-  type: ClusterIP
-  ports:
-    - name: http
-      port: 9200
-      protocol: TCP
-      targetPort: 9200
-    - name: transport
-      port: 9300
-      protocol: TCP
-      targetPort: 9300 

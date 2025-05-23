@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mongo-monitor
+  namespace: monitoring
+  labels:
+    release: prometheus
+    app: nginx
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: metrics
+  namespaceSelector:
+    matchNames:
+      - ignacpa3
+  endpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics
+      scrapeTimeout: 10s
+      honorLabels: true
