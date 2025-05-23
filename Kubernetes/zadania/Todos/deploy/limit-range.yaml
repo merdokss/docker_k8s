@@ -3,7 +3,7 @@ apiVersion: v1
 kind: LimitRange
 metadata:
   name: resource-limits
-  namespace: production  # Limity będą dotyczyć tylko namespace 'production'
+  namespace: dawid
 spec:
   limits:
   - type: Container  # Limity dla pojedynczych kontenerów
@@ -20,8 +20,8 @@ spec:
       cpu: 1000m     # 1 rdzeń CPU
       memory: 1Gi    # 1 GB pamięci
     maxLimitRequestRatio:  # Maksymalny stosunek limitu do requestu
-      cpu: 4              # Limit CPU może być max 4x większy niż request
-      memory: 4           # Limit pamięci może być max 4x większy niż request
+      cpu: 10              # Limit CPU może być max 4x większy niż request
+      memory: 10           # Limit pamięci może być max 4x większy niż request
 
   - type: Pod        # Limity dla całych podów
     max:             # Maksymalne sumaryczne wartości dla wszystkich kontenerów w podzie

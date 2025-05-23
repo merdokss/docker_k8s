@@ -18,6 +18,7 @@ spec:
       - name: wait-for-mongo
         image: busybox
         command: ['sh', '-c', 'until nc -z mongo-service 27017; do echo waiting for MongoDB...; sleep 2; done']
+      serviceAccountName: todos-api
       containers:
       - name: api
         image: dawid.azurecr.io/todo-be-rh3:1.0

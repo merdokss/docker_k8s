@@ -9,10 +9,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - kubernetes.docker.internal
+    - app-dawid.pl
     secretName: app-tls
   rules:
-  - host: kubernetes.docker.internal
+  - host: app-dawid.pl
     http:
       paths:
       - path: /

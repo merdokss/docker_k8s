@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: example-pod
-  namespace: production  # Pod musi być w tym samym namespace co LimitRange
+  namespace: dawid  # Pod musi być w tym samym namespace co LimitRange
 spec:
   containers:
   - name: nginx

@@ -77,14 +77,21 @@ helm upgrade my-release bitnami/nginx --values custom-values.yaml
 # Lista zainstalowanych releases
 helm list
 
-# Usunięcie release'u
+# Podstawowe usunięcie
 helm uninstall my-release
-```
+
+# Usunięcie z zachowaniem historii
+helm uninstall my-release --keep-history
+
+# Usunięcie z timeoutem i oczekiwaniem
+helm uninstall my-release --wait --timeout 5m
+
+# Symulacja usunięcia
+helm uninstall my-release --dry-run
 
 ## Tworzenie własnego chartu
 
 ### Inicjalizacja nowego chartu
-```bash
 helm create mychart
 ```
 
