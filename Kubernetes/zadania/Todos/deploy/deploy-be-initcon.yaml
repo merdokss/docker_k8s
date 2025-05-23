@@ -36,3 +36,7 @@ spec:
             secretKeyRef:
               name: mongodb-secret
               key: mongodb-uri
+        securityContext:
+          runAsUser: 1000
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true

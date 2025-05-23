@@ -82,3 +82,10 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+mongouri:
+  username: "root"
+  password: "password"
+  host: "todos-mongo-mongodb"
+  port: "27017"
+  database: "todos?authSource=admin"
