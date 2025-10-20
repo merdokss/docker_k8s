@@ -1,6 +1,5 @@
 
-
-## Ćwiczenie 4: Uruchomienie aplikacji ToDos
+## 1. Uruchomienie aplikacji ToDos
 ### Cel
 Uruchomienie aplikacji ToDos przy użyciu docker-compose (Docker-compose/5-ToDos)
 
@@ -25,4 +24,4 @@ Uruchomienie aplikacji ToDos przy użyciu docker-compose (Docker-compose/5-ToDos
 - Możliwość zarządzania danymi przez MongoDB Express
 - Poprawne zapisywanie i odczytywanie zadań z bazy danych
 
-## Ćwiczenie 5: Zbudowac i wypchac obrazy docker dla aplikacji ToDos(FE, BE) do zewnętrzego Registry
+## 2. Zbudowac i wypchac obrazy docker dla aplikacji ToDos(FE, BE) do zewnętrzego Registry

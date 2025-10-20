@@ -21,7 +21,7 @@ services:
       replicas: 5
       placement:
         constraints:
-          - node.role == worker
+          - node.role == Leader
     networks:
       - frontend
       - backend
@@ -30,17 +30,17 @@ services:
     environment:
       - DB_HOST=db
 
-  db:
-    image: postgres:13
-    deploy:
-      replicas: 1
-      # placement:
-      #   constraints:
-      #     - node.labels.role == database
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    networks:
-      - backend
+  # db:
+  #   image: postgres:13
+  #   deploy:
+  #     replicas: 1
+  #     # placement:
+  #     #   constraints:
+  #     #     - node.labels.role == database
+  #   volumes:
+  #     - db-data:/var/lib/postgresql/data
+  #   networks:
+  #     - backend
 
 networks:
   frontend:
