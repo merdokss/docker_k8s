@@ -185,8 +185,8 @@ docker exec ubuntu1 ping -c 4 ubuntu2
 # 7. Test połączenia z ubuntu2 do ubuntu1
 docker exec ubuntu2 ping -c 4 ubuntu1
 
-# 8. Sprawdzenie adresów IP
-docker exec ubuntu1 ip addr show
+# 8. Sprawdzenie adresów IP - do poprawy
+docker exec ubuntu1 ip addr show 
 docker exec ubuntu2 ip addr show
 
 # 9. Czyszczenie

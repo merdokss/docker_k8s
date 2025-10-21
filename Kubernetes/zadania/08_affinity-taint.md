@@ -202,15 +202,16 @@ spec:
                 values:
                 - ssd
         podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - complex-app
-            topologyKey: "kubernetes.io/hostname"
-            maxSkew: 2
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - complex-app
+              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: nginx
         image: nginx:latest

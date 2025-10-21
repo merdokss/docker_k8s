@@ -10,7 +10,7 @@
 2. Skonfiguruj `parallelism` i `completions` dla Job.
 3. Zweryfikuj, czy wszystkie zadania zostały poprawnie wykonane.
 
-## Zadanie 2: Job z Backoff Limit
+## Zadanie 3: Job z Backoff Limit
 1. Utwórz Job, który będzie miał skonfigurowany `backoffLimit`.
 2. Symuluj błędy w Job, aby sprawdzić zachowanie przy przekroczeniu limitu.
 3. Zweryfikuj, czy Job został odpowiednio zakończony po przekroczeniu limitu.

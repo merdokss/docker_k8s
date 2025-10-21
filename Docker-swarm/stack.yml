@@ -19,9 +19,9 @@ services:
     image: nginx:latest
     deploy:
       replicas: 5
-      placement:
-        constraints:
-          - node.role == Leader
+      # placement:
+      #   constraints:
+      #     - node.role == Leader
     networks:
       - frontend
       - backend
@@ -47,7 +47,7 @@ networks:
     driver: overlay
   backend:
     driver: overlay
-    internal: true
+    # internal: true
 
 volumes:
   db-data:
