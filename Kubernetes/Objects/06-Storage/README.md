@@ -1,210 +1,1009 @@
-## PersistentVolume (PV), PersistentVolumeClaim (PVC) i StorageClass w Kubernetes
+# Kubernetes Storage: PV, PVC i StorageClass
 
-PersistentVolume (PV), PersistentVolumeClaim (PVC) i StorageClass to kluczowe obiekty w Kubernetes, które umożliwiają dynamiczne zarządzanie trwałym przechowywaniem danych dla aplikacji kontenerowych.
+Kompleksowy przewodnik po zarządzaniu storage w Kubernetes - od podstaw do zaawansowanych scenariuszy.
+
+---
+
+## 📚 Spis treści
+
+- [Wprowadzenie](#wprowadzenie)
+- [Podstawowe koncepcje](#podstawowe-koncepcje)
+  - [PersistentVolume (PV)](#persistentvolume-pv)
+  - [PersistentVolumeClaim (PVC)](#persistentvolumeclaim-pvc)
+  - [StorageClass](#storageclass)
+- [Jak to działa razem](#jak-to-działa-razem)
+- [Tryby dostępu](#tryby-dostępu-access-modes)
+- [Reclaim Policy](#reclaim-policy)
+- [Czy StorageClass jest wymagana w PVC](#czy-storageclass-jest-wymagana-w-pvc)
+- [Best Practices](#best-practices)
+- [Troubleshooting](#troubleshooting)
+- [Przykłady](#przykłady)
+
+---
+
+## Wprowadzenie
+
+Storage w Kubernetes składa się z trzech głównych komponentów, które współpracują ze sobą aby zapewnić trwałe przechowywanie danych dla aplikacji.
+
+### 🏪 Analogia
+
+Wyobraź sobie system storage jak sklep:
+
+- **PersistentVolume (PV)** = konkretny magazyn/przestrzeń dyskowa (półka w magazynie)
+- **PersistentVolumeClaim (PVC)** = zamówienie/rezerwacja przestrzeni (zamówienie w sklepie)
+- **StorageClass** = kategoria/typ magazynu z automatycznym zaopatrzeniem (sklep internetowy z auto-dostawą)
+
+---
+
+## Podstawowe koncepcje
 
 ### PersistentVolume (PV)
 
-PersistentVolume (PV) to fragment pamięci masowej w klastrze, który został zaalokowany przez administratora lub dynamicznie za pomocą StorageClass. Jest to zasób w klastrze, tak jak węzeł jest zasobem klastra. PV to wtyczki woluminów, takie jak Volumes, ale mają cykl życia niezależny od dowolnego indywidualnego poda, który używa PV. Ten obiekt API przechwytuje szczegóły implementacji pamięci masowej, czy to NFS, iSCSI, czy specyficzny dla dostawcy chmury system pamięci masowej.
+**Definicja:** PV to faktyczna przestrzeń dyskowa dostępna w klastrze. To zasób na poziomie klastra (cluster-level), nie należy do żadnego namespace.
 
-**Kluczowe cechy PV:**
+#### Kluczowe cechy:
+- ✅ Tworzy go **administrator klastra**
+- ✅ Reprezentuje rzeczywisty storage (NFS, iSCSI, cloud disk, local disk)
+- ✅ Ma określoną pojemność
+- ✅ Ma tryby dostępu (ReadWriteOnce, ReadOnlyMany, ReadWriteMany)
+- ✅ Istnieje niezależnie od Podów
 
-*   **Pojemność (Capacity):** Określa rozmiar dostępnej pamięci.
-*   **Tryby dostępu (Access Modes):** Definiują, jak wolumin może być montowany przez węzły (np. `ReadWriteOnce`, `ReadOnlyMany`, `ReadWriteMany`).
-*   **Polityka odzyskiwania (Reclaim Policy):** Określa, co dzieje się z PV po zwolnieniu go przez PVC (`Retain`, `Delete`, `Recycle`).
-*   **Klasa przechowywania (Storage Class):** Opcjonalnie, PV może należeć do określonej klasy przechowywania, co pozwala na dynamiczne przydzielanie.
-
-Przykład definicji PersistentVolume:
-
+#### Przykład PV:
 ```yaml
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: moj-pv
-  labels:
-    type: local
+  name: pv-example
 spec:
-  storageClassName: manual
   capacity:
-    storage: 5Gi
+    storage: 10Gi
   accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: "/mnt/data" # Ścieżka na węźle - używane głównie w celach deweloperskich/testowych
+    - ReadWriteOnce  # Tylko jeden Pod może pisać
+  persistentVolumeReclaimPolicy: Retain  # Co się stanie po usunięciu PVC
+  storageClassName: manual
+  hostPath:  # Typ storage - tutaj lokalny folder
+    path: /mnt/data
 ```
+
+---
 
 ### PersistentVolumeClaim (PVC)
 
-PersistentVolumeClaim (PVC) to żądanie przechowywania danych przez użytkownika. Jest podobne do poda. Pody zużywają zasoby węzła, a PVC zużywają zasoby PV. Pody mogą żądać określonych poziomów zasobów (CPU i pamięć). Podobnie, PVC mogą żądać określonego rozmiaru i trybów dostępu.
+**Definicja:** PVC to **żądanie** użytkownika o przydzielenie storage. To sposób, w jaki Pody "proszą" o przestrzeń dyskową.
 
-Gdy użytkownik tworzy PVC, Kubernetes szuka PV, który spełnia kryteria zdefiniowane w PVC (rozmiar, tryby dostępu, opcjonalnie StorageClass). Jeśli pasujący PV zostanie znaleziony (lub dynamicznie utworzony przez StorageClass), PVC zostaje powiązane (bound) z tym PV.
+#### Kluczowe cechy:
+- ✅ Tworzy go **użytkownik/developer**
+- ✅ Należy do konkretnego namespace
+- ✅ Określa wymagania: ile miejsca potrzebuje, jaki tryb dostępu
+- ✅ Kubernetes automatycznie znajduje pasujący PV (binding)
 
-Przykład definicji PersistentVolumeClaim:
-
+#### Przykład PVC:
 ```yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: moja-pvc
+  name: pvc-example
+  namespace: default
 spec:
-  storageClassName: manual # Musi pasować do storageClassName w PV, jeśli PV jest pre-provisioned
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi
+      storage: 5Gi  # Proszę o 5GB
+  storageClassName: manual  # Z jakiej "kategorii"
 ```
+
+---
 
 ### StorageClass
 
-StorageClass dostarcza administratorom sposób na opisanie "klas" pamięci masowej, które oferują. Różne klasy mogą mapować się na różne poziomy jakości usług (QoS), polityki tworzenia kopii zapasowych lub dowolne inne zasady określone przez administratora klastra. Sam Kubernetes nie jest świadomy, co reprezentują te klasy. Ta koncepcja jest czasami nazywana "profilami" w innych systemach pamięci masowej.
+**Definicja:** StorageClass to definicja **jak automatycznie tworzyć** PV. To jak fabryka, która na żądanie produkuje storage.
 
-Gdy PVC żąda określonej StorageClass, Kubernetes używa odpowiedniego dostawcy (provisioner) zdefiniowanego w tej StorageClass do dynamicznego utworzenia PV. Jeśli StorageClass nie zostanie określona w PVC, może zostać użyta domyślna StorageClass klastra (jeśli jest skonfigurowana).
+#### Kluczowe cechy:
+- ✅ Umożliwia **Dynamic Provisioning** - automatyczne tworzenie PV
+- ✅ Definiuje typ storage i parametry (SSD, HDD, replikacja, etc.)
+- ✅ Różni provisionerzy dla różnych platform (AWS EBS, Azure Disk, GCE PD)
 
-**Kluczowe cechy StorageClass:**
+#### Przykład StorageClass (AWS):
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-ssd
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp3  # SSD
+  iopsPerGB: "10"
+  encrypted: "true"
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+```
 
-*   **Dostawca (Provisioner):** Określa, jaki plugin woluminu jest używany do tworzenia PV (np. `kubernetes.io/aws-ebs`, `kubernetes.io/gce-pd`, `kubernetes.io/azure-disk`).
-*   **Parametry (Parameters):** Specyficzne dla dostawcy parametry (np. typ dysku, strefa).
-*   **Polityka odzyskiwania (Reclaim Policy):** Domyślna polityka odzyskiwania dla PV dynamicznie utworzonych przez tę klasę.
-*   **Tryb wiązania woluminu (Volume Binding Mode):**
-    *   `Immediate`: Dynamiczne tworzenie i wiązanie woluminu następuje natychmiast po utworzeniu PVC.
-    *   `WaitForFirstConsumer`: Wiązanie i tworzenie woluminu jest opóźnione do momentu, gdy pod używający PVC zostanie zaplanowany. Jest to przydatne dla woluminów, które są ograniczone topologią węzła.
+---
 
-Przykład definicji StorageClass (dla lokalnego developmentu, bez dynamicznego provisioningu):
+## Jak to działa razem
 
+### Scenariusz 1: Static Provisioning (ręczne)
+```
+1. Admin tworzy PV (fizyczny storage jest już gotowy)
+2. User tworzy PVC z wymaganiami
+3. Kubernetes znajduje pasujący PV i łączy je (binding)
+4. Pod używa PVC jako volume
+```
+
+**Diagram przepływu:**
+```
+PV (10Gi) ←---binding---→ PVC (5Gi) ←---używa---→ Pod
+```
+
+### Scenariusz 2: Dynamic Provisioning (automatyczne)
+```
+1. Admin tworzy StorageClass
+2. User tworzy PVC wskazujący na StorageClass
+3. Kubernetes automatycznie tworzy PV używając StorageClass
+4. Pod używa PVC jako volume
+```
+
+**Diagram przepływu:**
+```
+StorageClass → (auto-tworzy) → PV ←---binding---→ PVC ←---używa---→ Pod
+```
+
+---
+
+## Tryby dostępu (Access Modes)
+
+| Tryb | Skrót | Opis |
+|------|-------|------|
+| ReadWriteOnce | RWO | Jeden Node może montować do zapisu |
+| ReadOnlyMany | ROX | Wiele Nodów może montować do odczytu |
+| ReadWriteMany | RWX | Wiele Nodów może montować do zapisu |
+| ReadWriteOncePod | RWOP | Tylko jeden Pod może montować do zapisu (K8s 1.22+) |
+
+### Przykład użycia:
+```yaml
+spec:
+  accessModes:
+    - ReadWriteOnce  # Najczęściej używany
+```
+
+---
+
+## Reclaim Policy
+
+Określa co się dzieje z PV po usunięciu PVC:
+
+| Policy | Opis | Użycie |
+|--------|------|--------|
+| **Retain** | PV pozostaje, dane zachowane, wymaga ręcznego czyszczenia | Produkcja, ważne dane |
+| **Delete** | PV i dane są automatycznie usuwane | Rozwój, dane tymczasowe |
+| **Recycle** | Dane są czyszczone (rm -rf), PV gotowy do użycia | ⚠️ Deprecated |
+
+### Przykład:
+```yaml
+spec:
+  persistentVolumeReclaimPolicy: Retain  # Bezpieczna opcja
+```
+
+---
+
+## Czy StorageClass jest wymagana w PVC?
+
+### ❌ Krótka odpowiedź: NIE, ale...
+
+PVC **nie musi** mieć zdefiniowanej StorageClass, ale zachowanie będzie różne w zależności od konfiguracji klastra.
+
+### 📋 Cztery scenariusze
+
+#### 1️⃣ PVC Z określoną StorageClass
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-with-sc
+spec:
+  storageClassName: fast-ssd  # ✅ Jawnie określona
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+```
+
+**Wynik:** Kubernetes użyje StorageClass `fast-ssd` do utworzenia PV (dynamic provisioning)
+
+---
+
+#### 2️⃣ PVC BEZ StorageClass (pusty string)
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-no-sc
+spec:
+  storageClassName: ""  # ✅ Jawnie wyłączone dynamic provisioning
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+```
+
+**Wynik:** Static provisioning - Kubernetes szuka istniejącego PV
+
+---
+
+#### 3️⃣ PVC BEZ pola storageClassName
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-default
+spec:
+  # storageClassName: <brak tego pola>
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+```
+
+**Wynik zależy od klastra:**
+
+**A) Jeśli istnieje default StorageClass:**
+```bash
+kubectl get storageclass
+# NAME                 PROVISIONER
+# standard (default)   kubernetes.io/gce-pd
+```
+→ Użyje default StorageClass (dynamic provisioning)
+
+**B) Jeśli NIE MA default StorageClass:**
+→ Static provisioning (szuka istniejącego PV)
+
+---
+
+#### 4️⃣ PVC z selektorem (zaawansowane)
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-with-selector
+spec:
+  storageClassName: ""  # Static provisioning
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  selector:  # ✅ Dodatkowe kryteria wyboru PV
+    matchLabels:
+      environment: production
+      tier: gold
+```
+
+---
+
+### 📊 Tabela porównawcza
+
+| Scenariusz | storageClassName | Default SC w klastrze | Wynik |
+|------------|------------------|----------------------|-------|
+| Jawnie określona SC | `storageClassName: fast-ssd` | Nieważne | Użyje `fast-ssd`, dynamic provisioning |
+| Pusty string | `storageClassName: ""` | Nieważne | Static provisioning, szuka PV |
+| Brak pola | (pole nie istnieje) | ✅ TAK | Użyje default SC, dynamic provisioning |
+| Brak pola | (pole nie istnieje) | ❌ NIE | Static provisioning, szuka PV |
+
+---
+
+### 🎯 Default StorageClass
+
+#### Sprawdzenie default StorageClass:
+```bash
+kubectl get storageclass
+```
+
+Przykładowy wynik:
+```
+NAME                 PROVISIONER             AGE
+standard (default)   kubernetes.io/gce-pd    30d
+fast-ssd            kubernetes.io/gce-pd    30d
+```
+
+#### Ustawienie StorageClass jako default:
 ```yaml
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: standard
-provisioner: kubernetes.io/no-provisioner # Wskazuje, że PV będą tworzone ręcznie
-volumeBindingMode: WaitForFirstConsumer
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"  # ✅ Klucz do sukcesu
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-standard
 ```
 
-Dla dostawców chmurowych, `provisioner` będzie inny, np.:
-*   AWS: `kubernetes.io/aws-ebs`
-*   GCP: `kubernetes.io/gce-pd`
-*   Azure: `kubernetes.io/azure-disk`
+#### Usunięcie default:
+```bash
+kubectl patch storageclass standard -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+```
 
-### Działający Przykład
+---
 
-Poniższy przykład demonstruje użycie `StorageClass` (do dynamicznego provisioningu, jeśli klaster to wspiera, lub ręcznego, jeśli użyjemy `no-provisioner`), `PersistentVolumeClaim` oraz `Pod`, który montuje ten wolumin.
+## Best Practices
 
-**Krok 1: Definicja StorageClass (`sc.yaml`)**
+### ✅ ZALECANE
 
-Jeśli twój klaster wspiera dynamiczne tworzenie woluminów (np. w chmurze), możesz użyć odpowiedniego `provisioner`. Dla celów demonstracyjnych, jeśli używasz Minikube lub podobnego lokalnego środowiska, możesz zacząć od `standard` StorageClass, która często jest prekonfigurowana, lub stworzyć własną z `kubernetes.io/no-provisioner` (co będzie wymagało ręcznego stworzenia PV) lub użyć wbudowanego provisionera Minikube (np. `k8s.io/minikube-hostpath`).
-
-Załóżmy, że chcemy użyć standardowej, często domyślnie dostępnej klasy lub stworzyć prostą dla celów lokalnych (jeśli nie ma domyślnej).
-
+#### 1. Zawsze jawnie określaj StorageClass w produkcji
 ```yaml
-# sc.yaml
+spec:
+  storageClassName: fast-ssd  # Jasne, explicit, przewidywalne
+```
+
+**Dlaczego?**
+- Brak niespodzianek
+- Łatwiejsze debugowanie
+- Kontrola kosztów (różne SC = różne ceny)
+- Niezależność od konfiguracji klastra
+
+#### 2. Dla static provisioning używaj pustego stringa
+```yaml
+spec:
+  storageClassName: ""  # Jasne: chcę ręcznie utworzonego PV
+```
+
+#### 3. Używaj sensownych nazw
+```yaml
+# ✅ DOBRZE
+storageClassName: prod-fast-ssd
+storageClassName: dev-standard-hdd
+
+# ❌ ŹLE
+storageClassName: sc1
+storageClassName: storage
+```
+
+#### 4. Dokumentuj wymagania storage
+```yaml
+metadata:
+  name: database-storage
+  annotations:
+    description: "High-performance SSD for PostgreSQL"
+    backup-policy: "daily"
+    retention: "30-days"
+spec:
+  storageClassName: prod-fast-ssd
+  resources:
+    requests:
+      storage: 100Gi
+```
+
+#### 5. Używaj odpowiednich Reclaim Policy
+```yaml
+# Produkcja - ważne dane
+persistentVolumeReclaimPolicy: Retain
+
+# Development/Testing
+persistentVolumeReclaimPolicy: Delete
+```
+
+---
+
+### ❌ UNIKAJ
+
+#### 1. Polegania na default StorageClass w produkcji
+```yaml
+# ❌ ŹLE - co się stanie?
+spec:
+  # storageClassName: ???
+  resources:
+    requests:
+      storage: 10Gi
+```
+
+**Dlaczego?**
+- Default może się zmienić
+- Nie wiadomo, jakie parametry storage
+- Różne klastry = różne defaulty
+- Trudne debugowanie
+
+#### 2. Używania hostPath w produkcji
+```yaml
+# ❌ ŹLE dla produkcji
+spec:
+  hostPath:
+    path: /mnt/data
+```
+
+**Dlaczego?**
+- Dane przywiązane do konkretnego node
+- Brak redundancji
+- Problem przy skalowaniu
+
+#### 3. Nadmiernych uprawnień dostępu
+```yaml
+# ❌ Unikaj jeśli nie potrzebne
+accessModes:
+  - ReadWriteMany  # Często niepotrzebne i droższe
+```
+
+---
+
+## Troubleshooting
+
+### Problem 1: PVC w stanie Pending
+```bash
+kubectl get pvc
+# NAME        STATUS    VOLUME   CAPACITY   STORAGECLASS
+# my-pvc      Pending                        
+```
+
+#### Diagnoza:
+```bash
+kubectl describe pvc my-pvc
+```
+
+#### Możliwe przyczyny i rozwiązania:
+
+##### A) Brak StorageClass
+
+**Objaw:**
+```
+Events:
+  Type     Reason              Message
+  ----     ------              -------
+  Warning  ProvisioningFailed  storageclass.storage.k8s.io "standard" not found
+```
+
+**Rozwiązanie:**
+```bash
+# Sprawdź dostępne StorageClasses
+kubectl get storageclass
+
+# Dodaj storageClassName do PVC lub utwórz StorageClass
+```
+
+##### B) Brak pasującego PV (static provisioning)
+
+**Objaw:**
+```
+Events:
+  Type     Reason         Message
+  ----     ------         -------
+  Normal   FailedBinding  no persistent volumes available for this claim
+```
+
+**Rozwiązanie:**
+```bash
+# Sprawdź dostępne PV
+kubectl get pv
+
+# Utwórz pasujący PV lub zmień na dynamic provisioning
+```
+
+##### C) Niekompatybilne accessModes
+
+**Objaw:**
+```
+Events:
+  Normal   FailedBinding  Cannot bind to requested volume
+```
+
+**Rozwiązanie:**
+```bash
+# Sprawdź accessModes w PV
+kubectl get pv pv-name -o yaml | grep accessModes -A 5
+
+# Dostosuj accessModes w PVC
+```
+
+---
+
+### Problem 2: Pod nie może zamontować volume
+```bash
+kubectl describe pod my-pod
+```
+
+**Objaw:**
+```
+Events:
+  Warning  FailedMount  MountVolume.SetUp failed: PVC "my-pvc" not found
+```
+
+**Rozwiązanie:**
+```bash
+# Sprawdź czy PVC istnieje w tym samym namespace
+kubectl get pvc -n <namespace>
+
+# Sprawdź czy PVC jest bound
+kubectl get pvc my-pvc
+```
+
+---
+
+### Problem 3: Volume pozostaje po usunięciu PVC
+
+**Objaw:**
+```bash
+kubectl get pv
+# NAME      STATUS     CLAIM           RECLAIMPOLICY
+# pv-xyz    Released   default/my-pvc  Retain
+```
+
+**Wyjaśnienie:** To normalne zachowanie dla `Retain` policy
+
+**Rozwiązanie:**
+```bash
+# 1. Zapisz dane jeśli potrzebne
+# 2. Usuń PV ręcznie
+kubectl delete pv pv-xyz
+
+# Lub zmień reclaim policy (jeśli to możliwe)
+kubectl patch pv pv-xyz -p '{"spec":{"persistentVolumeReclaimPolicy":"Delete"}}'
+```
+
+---
+
+### Przydatne komendy diagnostyczne
+```bash
+# Sprawdź wszystkie PV
+kubectl get pv
+
+# Sprawdź wszystkie PVC w namespace
+kubectl get pvc -n <namespace>
+
+# Szczegóły PV
+kubectl describe pv <pv-name>
+
+# Szczegóły PVC
+kubectl describe pvc <pvc-name>
+
+# Sprawdź StorageClasses
+kubectl get storageclass
+
+# Sprawdź default StorageClass
+kubectl get storageclass -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}'
+
+# Sprawdź logi provisioner (dla dynamic provisioning)
+kubectl logs -n kube-system -l app=<provisioner-name>
+
+# Sprawdź eventy w namespace
+kubectl get events -n <namespace> --sort-by='.lastTimestamp'
+```
+
+---
+
+## Przykłady
+
+### Przykład 1: Kompletna aplikacja z storage
+
+#### 1. StorageClass (dynamiczny)
+```yaml
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: standard-local # Możesz nazwać ją inaczej
-provisioner: k8s.io/minikube-hostpath # Przykład dla Minikube; zmień na odpowiedni dla Twojego klastra
-# Dla ręcznego tworzenia PV, użyłbyś:
-# provisioner: kubernetes.io/no-provisioner
-# volumeBindingMode: WaitForFirstConsumer
-reclaimPolicy: Delete # Co zrobić z PV po usunięciu PVC
-allowVolumeExpansion: true # Czy wolno rozszerzać wolumin
+  name: fast-storage
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-ssd
+  replication-type: regional-pd
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
 ```
 
-**Uwaga:** Jeśli używasz `kubernetes.io/no-provisioner`, musisz ręcznie stworzyć `PersistentVolume`, który pasuje do żądania `PersistentVolumeClaim` i ma `storageClassName: standard-local`.
-
-**Krok 2: Definicja PersistentVolumeClaim (`pvc.yaml`)**
-
-PVC będzie żądać pamięci od `StorageClass` zdefiniowanej powyżej.
-
+#### 2. PVC (żądanie storage)
 ```yaml
-# pvc.yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: moj-dynamiczny-pvc
+  name: webapp-storage
+  namespace: production
 spec:
-  storageClassName: standard-local # Musi pasować do nazwy StorageClass
   accessModes:
-    - ReadWriteOnce # Ten tryb dostępu musi być wspierany przez PV/StorageClass
+    - ReadWriteOnce
+  storageClassName: fast-storage
   resources:
     requests:
-      storage: 1Gi # Żądany rozmiar pamięci
+      storage: 20Gi
 ```
 
-**Krok 3: Definicja Poda używającego PVC (`pod.yaml`)**
-
-Ten pod będzie montował wolumin udostępniony przez `moj-dynamiczny-pvc`.
-
+#### 3. Deployment (używa PVC)
 ```yaml
-# pod.yaml
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: moj-pod-z-woluminem
+  name: webapp
+  namespace: production
 spec:
-  containers:
-  - name: moj-kontener
-    image: nginx
-    ports:
-    - containerPort: 80
-      name: "http-server"
-    volumeMounts:
-    - mountPath: "/usr/share/nginx/html" # Ścieżka montowania wewnątrz kontenera
-      name: moj-pd # Musi pasować do nazwy woluminu zdefiniowanej poniżej
-  volumes:
-  - name: moj-pd
-    persistentVolumeClaim:
-      claimName: moj-dynamiczny-pvc # Nazwa PVC, którego chcemy użyć
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.21
+        volumeMounts:
+        - name: data
+          mountPath: /usr/share/nginx/html
+        ports:
+        - containerPort: 80
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: webapp-storage
 ```
 
-**Krok 4: Aplikowanie konfiguracji w klastrze**
-
-Aby uruchomić powyższy przykład, zapisz każdą definicję YAML w osobnym pliku (`sc.yaml`, `pvc.yaml`, `pod.yaml`) w tym samym katalogu, a następnie zastosuj je używając `kubectl`:
-
+#### Deployment:
 ```bash
-# Jeśli stworzyłeś StorageClass:
-kubectl apply -f sc.yaml
-
-# Następnie PVC:
+kubectl apply -f storageclass.yaml
 kubectl apply -f pvc.yaml
+kubectl apply -f deployment.yaml
 
-# Na koniec Pod:
-kubectl apply -f pod.yaml
+# Weryfikacja
+kubectl get pvc -n production
+kubectl get pods -n production
 ```
 
-**Sprawdzanie statusu:**
+---
 
-*   Sprawdź StorageClass: `kubectl get sc`
-*   Sprawdź PVC i jego status (powinien być `Bound`): `kubectl get pvc moj-dynamiczny-pvc`
-*   Sprawdź PV (jeśli jest dynamicznie tworzony, jego nazwa będzie inna niż PVC): `kubectl get pv`
-*   Sprawdź status Poda: `kubectl get pod moj-pod-z-woluminem`
-*   Wejdź do kontenera i sprawdź zamontowany wolumin:
-    ```bash
-    kubectl exec -it moj-pod-z-woluminem -- /bin/bash
-    # Wewnątrz kontenera:
-    df -h /usr/share/nginx/html
-    echo "Witaj na trwałym woluminie!" > /usr/share/nginx/html/index.html
-    exit
-    ```
-*   Aby sprawdzić, czy dane są trwałe, usuń poda i stwórz go ponownie (lub stwórz innego poda używającego tego samego PVC). Dane w `index.html` powinny pozostać.
+### Przykład 2: Static Provisioning z NFS
 
+#### 1. PV z NFS
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-pv
+spec:
+  capacity:
+    storage: 100Gi
+  accessModes:
+    - ReadWriteMany  # NFS wspiera RWX
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs
+  nfs:
+    server: 192.168.1.100
+    path: /exported/path
+```
+
+#### 2. PVC dla NFS
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-claim
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs
+  resources:
+    requests:
+      storage: 50Gi
+```
+
+#### 3. StatefulSet używający NFS
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  serviceName: "nginx"
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.21
+        volumeMounts:
+        - name: shared-data
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: shared-data
+    spec:
+      accessModes:
+        - ReadWriteMany
+      storageClassName: nfs
+      resources:
+        requests:
+          storage: 10Gi
+```
+
+---
+
+### Przykład 3: Multi-tier aplikacja z różnymi storage
+```yaml
+---
+# Fast SSD dla bazy danych
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-storage
+  namespace: app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: fast-ssd
+  resources:
+    requests:
+      storage: 50Gi
+---
+# Standard storage dla aplikacji
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-storage
+  namespace: app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 20Gi
+---
+# Shared storage dla media
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-storage
+  namespace: app
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs
+  resources:
+    requests:
+      storage: 100Gi
+---
+# Database Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:14
+        env:
+        - name: POSTGRES_PASSWORD
+          value: "secret"
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: db-storage
+---
+# Application Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  namespace: app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - name: app
+        image: myapp:latest
+        volumeMounts:
+        - name: app-data
+          mountPath: /app/data
+        - name: media
+          mountPath: /app/media
+      volumes:
+      - name: app-data
+        persistentVolumeClaim:
+          claimName: app-storage
+      - name: media
+        persistentVolumeClaim:
+          claimName: media-storage
+```
+
+---
+
+### Przykład 4: Volume Snapshot (backup)
+
+#### 1. VolumeSnapshotClass
+```yaml
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: csi-snapclass
+driver: pd.csi.storage.gke.io
+deletionPolicy: Delete
+```
+
+#### 2. Utworzenie snapshot
+```yaml
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: db-snapshot-20231201
+  namespace: production
+spec:
+  volumeSnapshotClassName: csi-snapclass
+  source:
+    persistentVolumeClaimName: db-storage
+```
+
+#### 3. Przywrócenie z snapshot
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-storage-restored
+  namespace: production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: fast-ssd
+  resources:
+    requests:
+      storage: 50Gi
+  dataSource:
+    name: db-snapshot-20231201
+    kind: VolumeSnapshot
+    apiGroup: snapshot.storage.k8s.io
+```
+
+---
+
+## 💡 Kluczowe punkty do zapamiętania
+
+1. **PV** = fizyczny storage (admin zarządza) - cluster-wide
+2. **PVC** = prośba o storage (developer zarządza) - namespace-scoped
+3. **StorageClass** = automatyczna fabryka PV - cluster-wide
+4. Dynamic provisioning > Static provisioning (mniej pracy ręcznej)
+5. **Zawsze określaj StorageClass explicit w produkcji**
+6. `storageClassName: ""` = wymusza static provisioning
+7. Brak pola storageClassName = użyje default SC (jeśli istnieje)
+8. Jeden klaster może mieć tylko jedną default StorageClass
+9. Wybieraj odpowiedni Reclaim Policy dla środowiska
+10. ReadWriteMany jest droższe i nie wszędzie dostępne
+
+---
+
+## 📖 Dodatkowe zasoby
+
+### Oficjalna dokumentacja:
+- [Kubernetes Storage](https://kubernetes.io/docs/concepts/storage/)
+- [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
+- [Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/)
+- [Dynamic Volume Provisioning](https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/)
+
+### Provisionerzy dla różnych platform:
+- **AWS EBS CSI Driver**: `ebs.csi.aws.com`
+- **Azure Disk CSI Driver**: `disk.csi.azure.com`
+- **GCE PD CSI Driver**: `pd.csi.storage.gke.io`
+- **NFS**: `nfs.csi.k8s.io`
+- **Ceph RBD**: `rbd.csi.ceph.com`
+
+---
+
+## 🎓 Ćwiczenia praktyczne
+
+### Ćwiczenie 1: Basic Dynamic Provisioning
+
+**Cel:** Utworzenie aplikacji z dynamic storage
+
+**Zadania:**
+1. Sprawdź czy w klastrze jest default StorageClass
+2. Utwórz PVC z 10Gi storage
+3. Utwórz Pod z nginx, który używa tego PVC
+4. Zapisz plik HTML w volume
+5. Usuń Pod i utwórz nowy - sprawdź czy plik nadal istnieje
+
+### Ćwiczenie 2: Static Provisioning
+
+**Cel:** Ręczne tworzenie PV i binding
+
+**Zadania:**
+1. Utwórz PV z hostPath (5Gi)
+2. Utwórz PVC z `storageClassName: ""`
+3. Sprawdź czy PVC automatycznie się zbindował
+4. Utwórz Pod używający tego PVC
+
+### Ćwiczenie 3: Troubleshooting
+
+**Cel:** Debugowanie problemów ze storage
+
+**Zadania:**
+1. Utwórz PVC z nieistniejącą StorageClass
+2. Zidentyfikuj problem używając `kubectl describe`
+3. Napraw problem
+4. Utwórz PVC z większym storage niż dostępny PV
+5. Zdiagnozuj i napraw
+
+### Ćwiczenie 4: Multi-pod Access
+
+**Cel:** Praca z różnymi access modes
+
+**Zadania:**
+1. Utwórz PVC z ReadWriteMany (jeśli wspierane)
+2. Utwórz 3 Pody, które jednocześnie piszą do tego volume
+3. Sprawdź czy wszystkie Pody widzą te same dane
+4. Porównaj z ReadWriteOnce
+
+---
+
+## ⚡ Quick Reference
+
+### Podstawowe komendy
 ```bash
-kubectl delete pod moj-pod-z-woluminem
-# Poczekaj chwilę, aż pod zostanie usunięty
-kubectl apply -f pod.yaml
-kubectl exec -it moj-pod-z-woluminem -- cat /usr/share/nginx/html/index.html
-# Powinieneś zobaczyć "Witaj na trwałym woluminie!"
+# PersistentVolumes
+kubectl get pv
+kubectl describe pv <name>
+kubectl delete pv <name>
+
+# PersistentVolumeClaims
+kubectl get pvc
+kubectl get pvc -n <namespace>
+kubectl describe pvc <name>
+kubectl delete pvc <name>
+
+# StorageClasses
+kubectl get sc
+kubectl get storageclass
+kubectl describe sc <name>
+
+# Sprawdź binding
+kubectl get pv,pvc
+
+# Sprawdź wydarzenia
+kubectl get events --sort-by='.lastTimestamp'
 ```
 
-**Czyszczenie:**
+### Access Modes - szybka ściąga
+```yaml
+# Jeden node, zapis
+accessModes: [ReadWriteOnce]
 
-Aby usunąć zasoby stworzone w tym przykładzie:
+# Wiele nodów, odczyt
+accessModes: [ReadOnlyMany]
 
-```bash
-kubectl delete pod moj-pod-z-woluminem
-kubectl delete pvc moj-dynamiczny-pvc
-# Jeśli stworzyłeś StorageClass i chcesz ją usunąć:
-kubectl delete sc standard-local
-# PV zostanie usunięty automatycznie, jeśli ReclaimPolicy to Delete,
-# w przeciwnym razie może wymagać ręcznego usunięcia (jeśli Retain).
+# Wiele nodów, zapis (wymaga specjalnego storage)
+accessModes: [ReadWriteMany]
 ```
-Ten przykład pokazuje podstawy działania PV, PVC i StorageClass. W rzeczywistych scenariuszach konfiguracje mogą być bardziej złożone, zależnie od wymagań aplikacji i używanego środowiska Kubernetes. 
+
+### Reclaim Policies - szybka ściąga
+```yaml
+# Zachowaj dane (produkcja)
+persistentVolumeReclaimPolicy: Retain
+
+# Usuń automatycznie (development)
+persistentVolumeReclaimPolicy: Delete
+```
+
+---
+
