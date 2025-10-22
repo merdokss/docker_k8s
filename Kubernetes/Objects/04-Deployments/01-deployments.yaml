@@ -14,9 +14,11 @@ spec:
       labels:
         app: nginx
     spec:
+      imagePullSecrets:
+        - name: azurecr
       containers:
         - name: nginx
-          image: nginx:1.28
+          image: dawidsages.azurecr.io/dawid-todos-api:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: nginx
