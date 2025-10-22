@@ -9,10 +9,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - app-dawid.pl
+    - dawidapp.pl
     secretName: app-tls
   rules:
-  - host: app-dawid.pl
+  - host: dawidapp.pl
     http:
       paths:
       - path: /

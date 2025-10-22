@@ -5,7 +5,7 @@ metadata:
   labels:
     app: nginx
 spec:
-  replicas: 5
+  replicas: 2
   selector:
     matchLabels:
       app: nginx
@@ -14,11 +14,9 @@ spec:
       labels:
         app: nginx
     spec:
-      imagePullSecrets:
-        - name: azurecr
       containers:
         - name: nginx
-          image: dawidsages.azurecr.io/dawid-todos-api:latest
+          image: nginx
           imagePullPolicy: IfNotPresent
           ports:
             - name: nginx
