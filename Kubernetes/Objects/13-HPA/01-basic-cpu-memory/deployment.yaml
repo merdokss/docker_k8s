@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: example-app
+  name: hpa-test
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: example-app
+      app: hpa-test
   template:
     metadata:
       labels:
-        app: example-app
+        app: hpa-test
     spec:
       containers:
       - name: web

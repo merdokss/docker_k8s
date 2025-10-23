@@ -1,0 +1,43 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa
+  namespace: default
+spec:
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60 
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 60  # Usuń max 1 pod na minutę (bezpieczniejsze)
+      selectPolicy: Min  # Wybierz bardziej konserwatywną opcję
+    scaleUp:
+      stabilizationWindowSeconds: 0  # Domyślnie OK
+      policies:
+      - type: Percent
+        value: 50  # Zwiększ o 50% zamiast 100% (mniej agresywne)
+        periodSeconds: 15
+      - type: Pods
+        value: 2  # Max 2 pody co 15s zamiast 4
+        periodSeconds: 15
+      selectPolicy: Max
+  maxReplicas: 5
+  metrics:
+  - resource:
+      name: cpu
+      target:
+        averageUtilization: 50
+        type: Utilization
+    type: Resource
+  - resource:
+      name: memory
+      target:
+        averageUtilization: 50
+        type: Utilization
+    type: Resource
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hpa-test
