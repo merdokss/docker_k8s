@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-limit
+  labels:
+    app: nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: nginx
+              protocol: TCP
+              containerPort: 80
+          resources:
+            requests:
+              cpu: 600m
+              memory: 600Mi
+            limits:
+              cpu: 800m
+              memory: 800Mi

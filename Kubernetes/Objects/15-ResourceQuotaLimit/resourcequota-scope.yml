@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: example-quota
+spec:
+  hard:
+    # Limity zasobów obliczeniowych
+    requests.cpu: "4"
+    requests.memory: 4Gi
+    limits.cpu: "8"
+    limits.memory: 8Gi
+    
+    # Limity liczby obiektów
+    pods: "10"
+    services: "5"
+    services.loadbalancers: "1"
+    persistentvolumeclaims: "4"
+    
+    # Limity dla secrets i configmaps
+    secrets: "10"
+    configmaps: "10"
+    
+  # Opcjonalne selektory zakresu
+  scopeSelector:
+    matchExpressions:
+    - scopeName: PriorityClass
+      operator: In
+      values: ["high-priority", "medium-priority"]
+
+
+# Dostępne zakresy (scopes):
+# Terminating - pody w stanie terminating
+# NotTerminating - pody w stanie running
+# BestEffort - pody bez limitów zasobów
+# NotBestEffort - pody z limitami zasobów
+# PriorityClass - pody z określoną klasą priorytetów
+# CrossNamespacePodAffinity - pody z regułami affinity między namespace'ami
