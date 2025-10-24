@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-demo-ingress
+  namespace: default
+  annotations:
+    # Opcjonalne annotacje dla Azure App Routing
+    # nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: webapprouting.kubernetes.azure.com
+  rules:
+  - host: todos.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-demo-service
+            port:
+              number: 80
+

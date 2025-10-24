@@ -1,0 +1,25 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: kafka-consumer-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: kafka-consumer
+  minReplicaCount: 0          # Może skalować do 0
+  maxReplicaCount: 10         # Max 10 replik
+  pollingInterval: 15         # Sprawdzaj lag co 15 sekund
+  cooldownPeriod: 300         # 5 minut przed skalowaniem do 0
+  triggers:
+  - type: kafka
+    metadata:
+      bootstrapServers: kafka.default.svc.cluster.local:9092
+      consumerGroup: my-consumer-group
+      topic: test-topic
+      lagThreshold: "50"                # 1 replika na 50 wiadomości lag
+      activationLagThreshold: "10"      # Minimalne 10 wiadomości aby aktywować
+      offsetResetPolicy: latest         # latest | earliest
+      allowIdleConsumers: "false"       # Skaluj w dół idle consumers
+      scaleToZeroOnInvalidOffset: "false"
+      excludePersistentLag: "false"
+

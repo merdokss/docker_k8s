@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-with-metrics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app-with-metrics
+  template:
+    metadata:
+      labels:
+        app: my-app-with-metrics
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: app
+        # Przykładowa aplikacja z metrykami - możesz użyć własnej
+        image: ghcr.io/stefanprodan/podinfo:6.5.3
+        ports:
+        - containerPort: 9898
+          name: http
+        - containerPort: 9797
+          name: http-metrics
+        env:
+        - name: PODINFO_UI_COLOR
+          value: "#34577c"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9898
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 9898
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+  labels:
+    app: my-app-with-metrics
+spec:
+  type: ClusterIP
+  selector:
+    app: my-app-with-metrics
+  ports:
+  - name: http
+    port: 80
+    targetPort: 9898
+  - name: metrics
+    port: 9797
+    targetPort: 9797
+

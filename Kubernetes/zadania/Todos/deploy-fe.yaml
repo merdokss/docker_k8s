@@ -35,4 +35,4 @@ spec:
         #   periodSeconds: 5
         env:
         - name: REACT_APP_API_URL
-          value: "http://dawidapp.mooo.com/api"
+          value: "/api"

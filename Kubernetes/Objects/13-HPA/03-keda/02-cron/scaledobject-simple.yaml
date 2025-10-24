@@ -1,0 +1,18 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: cron-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: scheduled-app
+  minReplicaCount: 0      # Poza harmonogramem = 0 replik
+  maxReplicaCount: 10
+  triggers:
+  - type: cron
+    metadata:
+      timezone: Europe/Warsaw
+      start: 0 8 * * 1-5    # Poniedziałek-Piątek o 8:00
+      end: 0 18 * * 1-5     # Poniedziałek-Piątek o 18:00
+      desiredReplicas: "3"  # 3 repliki w godzinach pracy
+

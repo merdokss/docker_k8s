@@ -1,0 +1,38 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: prometheus-custom-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: my-app-with-metrics
+  minReplicaCount: 0      # Może skalować do 0
+  maxReplicaCount: 15
+  pollingInterval: 30
+  cooldownPeriod: 600
+  triggers:
+  # Przykład: Skaluj na podstawie średniego czasu odpowiedzi (latency)
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus-kube-prometheus-prometheus.monitoring.svc:9090
+      metricName: http_latency_p95
+      # P95 latency - 95th percentile
+      query: |
+        histogram_quantile(
+          0.95,
+          sum(rate(http_request_duration_seconds_bucket{app="my-app-with-metrics"}[5m])) by (le)
+        )
+      # Skaluj gdy p95 latency > 0.5s (500ms)
+      threshold: "0.5"
+      ignoreNullValues: "true"
+  
+  # Można dodać więcej triggerów
+  # - type: prometheus
+  #   metadata:
+  #     serverAddress: http://prometheus.monitoring.svc:9090
+  #     metricName: error_rate
+  #     query: |
+  #       sum(rate(http_requests_total{status=~"5..",app="my-app-with-metrics"}[5m])) /
+  #       sum(rate(http_requests_total{app="my-app-with-metrics"}[5m]))
+  #     threshold: "0.05"  # 5% error rate
+

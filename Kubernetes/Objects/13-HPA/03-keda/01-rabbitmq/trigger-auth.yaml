@@ -1,0 +1,35 @@
+# Opcjonalnie: Używaj TriggerAuthentication dla bezpiecznego przechowywania credentials
+# Zamiast hardcodować credentials w ScaledObject
+
+# Najpierw utwórz Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-secret
+type: Opaque
+stringData:
+  host: amqp://guest:guest@rabbitmq.default.svc.cluster.local:5672
+---
+# Następnie TriggerAuthentication
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: rabbitmq-auth
+  namespace: default
+spec:
+  secretTargetRef:
+  - parameter: host
+    name: rabbitmq-secret
+    key: host
+---
+# W ScaledObject użyj:
+# triggers:
+# - type: rabbitmq
+#   metadata:
+#     protocol: auto
+#     queueName: test-queue
+#     mode: QueueLength
+#     value: "5"
+#   authenticationRef:
+#     name: rabbitmq-auth
+

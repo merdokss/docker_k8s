@@ -4,6 +4,8 @@
 
 Prometheus to system monitorowania i alertowania typu open-source, zaprojektowany specjalnie dla środowisk konteneryzowanych. Jest to kluczowy element w monitorowaniu aplikacji działających w Kubernetes.
 
+> 💡 **Szybki start:** Zainstalowane komponenty i instrukcje dostępu - zobacz [INSTALACJA.md](./INSTALACJA.md)
+
 ## Komponenty Prometheus Operator
 
 Prometheus Operator składa się z następujących głównych komponentów:

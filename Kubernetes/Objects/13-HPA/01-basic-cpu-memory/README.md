@@ -32,7 +32,8 @@ kubectl apply -f hpa.yaml
 
 # 3. Sprawdź status
 kubectl get hpa
-kubectl get deployment example-app
+kubectl get deployment hpa-test
+kubectl get pods -l app=hpa-test
 ```
 
 ## Jak przetestować skalowanie
@@ -40,7 +41,7 @@ kubectl get deployment example-app
 1. Generowanie obciążenia CPU:
 ```bash
 # W osobnym terminalu uruchom port-forward
-kubectl port-forward svc/example-app 8080:80
+kubectl port-forward svc/hpa-service 8080:80
 
 # W innym terminalu generuj obciążenie
 while true; do curl http://localhost:8080; done
@@ -49,10 +50,13 @@ while true; do curl http://localhost:8080; done
 2. Monitorowanie skalowania:
 ```bash
 # Obserwuj HPA
-kubectl get hpa example-app-hpa -w
+kubectl get hpa -w
 
 # Sprawdź liczbę podów
-kubectl get pods -l app=example-app
+kubectl get pods -l app=hpa-test -w
+
+# Sprawdź metryki podów
+kubectl top pods -l app=hpa-test
 ```
 
 ## Zachowanie skalowania
@@ -63,6 +67,12 @@ kubectl get pods -l app=example-app
 - Minimalnie zawsze będzie działał 1 pod 
 
 
-### Obciązenie serwara nginx zapytaniami
+### Obciążenie serwera nginx zapytaniami
 
-`python3 Kubernetes/zadania/load_test.py --url http://localhost:8080 --concurrency 500 --duration 300`
+```bash
+# Użyj skryptu load_test.py z tego katalogu
+python3 load_test.py --url http://localhost:8080 --concurrency 100 --duration 300
+
+# Lub użyj prostej pętli w bash
+while true; do curl http://localhost:8080; done
+```

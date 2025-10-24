@@ -12,7 +12,7 @@ spec:
       app.kubernetes.io/instance: nginx-prom
   namespaceSelector:
     matchNames:
-      - dawid
+      - default
   endpoints:
     - port: metrics
       interval: 15s

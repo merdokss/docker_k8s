@@ -15,7 +15,7 @@ kubectl create clusterrolebinding external-user-binding \
 ``
 SERVER=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
 CA_CERT=$(kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
-CLUSTER_NAME="dama-operator"
+CLUSTER_NAME="dama-operator2"
 ``
 
 # 5. Wygeneruj kubeconfig

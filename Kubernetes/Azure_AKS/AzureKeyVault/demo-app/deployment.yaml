@@ -1,0 +1,291 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keyvault-demo
+  namespace: default
+  labels:
+    app: keyvault-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: keyvault-demo
+  template:
+    metadata:
+      labels:
+        app: keyvault-demo
+        azure.workload.identity/use: "true"  # WAŻNE! Włącza Workload Identity
+    spec:
+      serviceAccountName: workload-identity-sa
+      initContainers:
+      - name: install-deps
+        image: node:18-alpine
+        command: ["/bin/sh", "-c"]
+        args:
+          - "cd /app && npm install --silent express && echo '✅ Express zainstalowany!'"
+        volumeMounts:
+        - name: app-code
+          mountPath: "/app"
+        - name: node-modules
+          mountPath: "/app/node_modules"
+      containers:
+      - name: app
+        image: node:18-alpine
+        ports:
+        - containerPort: 3000
+          name: http
+        command: ["node", "/app/app.js"]
+        volumeMounts:
+        - name: secrets-store
+          mountPath: "/mnt/secrets"
+          readOnly: true
+        - name: app-code
+          mountPath: "/app"
+          readOnly: true
+        - name: node-modules
+          mountPath: "/app/node_modules"
+        # Zmienne środowiskowe z Kubernetes Secret (zsynchronizowane z Key Vault)
+        env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: db-password
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: api-key
+        - name: CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: connection-string
+        - name: NODE_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: azure-keyvault-secrets
+      - name: app-code
+        configMap:
+          name: app-code
+      - name: node-modules
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keyvault-demo
+  namespace: default
+  labels:
+    app: keyvault-demo
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: keyvault-demo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-code
+  namespace: default
+data:
+  app.js: |
+    const express = require('express');
+    const fs = require('fs');
+    const app = express();
+    const port = process.env.PORT || 3000;
+
+    // Ścieżka do secretów montowanych przez CSI Driver
+    const SECRETS_PATH = '/mnt/secrets';
+
+    app.get('/', (req, res) => {
+      res.send(`
+        <html>
+          <head>
+            <title>Azure Key Vault Demo</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 40px; background-color: #f0f0f0; }
+              .container { background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              h1 { color: #0078d4; }
+              .secret-box { background-color: #e8f4fd; padding: 15px; margin: 10px 0; border-left: 4px solid #0078d4; }
+              .success { color: #107c10; }
+              .error { color: #d13438; }
+              code { background-color: #f5f5f5; padding: 2px 6px; border-radius: 3px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>🔐 Azure Key Vault - Demo Aplikacji</h1>
+              <p>Aplikacja używa Azure Key Vault do bezpiecznego przechowywania secretów.</p>
+              
+              <h2>Status połączenia z Key Vault</h2>
+              <div class="secret-box">
+                <p><strong>Metoda:</strong> Secrets Store CSI Driver + Workload Identity</p>
+                <p><strong>Ścieżka montowania:</strong> <code>${SECRETS_PATH}</code></p>
+              </div>
+
+              <h2>📋 Dostępne sekrety:</h2>
+              ${getSecretsInfo()}
+
+              <h2>🌍 Zmienne środowiskowe:</h2>
+              ${getEnvVarsInfo()}
+
+              <hr>
+              <p><em>Wszystkie sekrety są bezpiecznie pobierane z Azure Key Vault</em></p>
+            </div>
+          </body>
+        </html>
+      `);
+    });
+
+    app.get('/health', (req, res) => {
+      res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+    });
+
+    app.get('/secrets', (req, res) => {
+      const secrets = readSecretsFromFiles();
+      res.json({
+        status: 'success',
+        secretsPath: SECRETS_PATH,
+        availableSecrets: Object.keys(secrets),
+        message: 'Sekrety zostały pomyślnie odczytane z Key Vault'
+      });
+    });
+
+    function readSecretsFromFiles() {
+      const secrets = {};
+      
+      try {
+        if (fs.existsSync(SECRETS_PATH)) {
+          const files = fs.readdirSync(SECRETS_PATH);
+          
+          files.forEach(file => {
+            try {
+              const filePath = `${SECRETS_PATH}/${file}`;
+              const stat = fs.statSync(filePath);
+              
+              if (stat.isFile()) {
+                const content = fs.readFileSync(filePath, 'utf8');
+                secrets[file] = {
+                  length: content.length,
+                  preview: content.substring(0, 4) + '***',
+                  available: true
+                };
+              }
+            } catch (err) {
+              secrets[file] = { error: err.message, available: false };
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Błąd odczytu secretów:', err);
+      }
+      
+      return secrets;
+    }
+
+    function getSecretsInfo() {
+      const secrets = readSecretsFromFiles();
+      const secretKeys = Object.keys(secrets);
+      
+      if (secretKeys.length === 0) {
+        return '<div class="secret-box error">⚠️ Brak zamontowanych secretów</div>';
+      }
+      
+      let html = '';
+      secretKeys.forEach(key => {
+        const secret = secrets[key];
+        if (secret.available) {
+          html += `
+            <div class="secret-box success">
+              <strong>✅ ${key}</strong><br>
+              Długość: ${secret.length} znaków<br>
+              Podgląd: <code>${secret.preview}</code>
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="secret-box error">
+              <strong>❌ ${key}</strong><br>
+              Błąd: ${secret.error}
+            </div>
+          `;
+        }
+      });
+      
+      return html;
+    }
+
+    function getEnvVarsInfo() {
+      const envVars = ['DB_PASSWORD', 'API_KEY', 'CONNECTION_STRING', 'NODE_ENV', 'HOSTNAME'];
+      let html = '<ul>';
+      
+      envVars.forEach(varName => {
+        const value = process.env[varName];
+        if (value) {
+          const preview = value.length > 20 ? value.substring(0, 8) + '***' : value.substring(0, 4) + '***';
+          html += `<li><strong>${varName}:</strong> <code>${preview}</code> (długość: ${value.length})</li>`;
+        } else {
+          html += `<li><strong>${varName}:</strong> <em>nie ustawiona</em></li>`;
+        }
+      });
+      
+      html += '</ul>';
+      return html;
+    }
+
+    app.listen(port, () => {
+      console.log(`🚀 Aplikacja uruchomiona na porcie ${port}`);
+      console.log(`📁 Ścieżka do secretów: ${SECRETS_PATH}`);
+      
+      const secrets = readSecretsFromFiles();
+      console.log(`🔐 Znaleziono secretów: ${Object.keys(secrets).length}`);
+      Object.keys(secrets).forEach(key => {
+        console.log(`   - ${key}: ${secrets[key].available ? '✅' : '❌'}`);
+      });
+    });
+  package.json: |
+    {
+      "name": "keyvault-demo-app",
+      "version": "1.0.0",
+      "description": "Demo aplikacji używającej Azure Key Vault z AKS",
+      "main": "app.js",
+      "scripts": {
+        "start": "node app.js"
+      },
+      "dependencies": {
+        "express": "^4.18.2"
+      }
+    }
+

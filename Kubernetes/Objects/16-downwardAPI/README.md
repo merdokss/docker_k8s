@@ -156,12 +156,3 @@ Teraz Twoja aplikacja może w logach pisać:
 - Labels/annotations tylko przez volume, nie przez env
 - To dane **read-only** - nie możesz ich zmienić z poziomu kontenera
 
----
-
-**Analogia na koniec:** Downward API to jak numer na koszulce piłkarza. Nie musisz pamiętać swojego numeru - wystarczy spojrzeć w dół (stąd nazwa "downward"). Kubernetes "przypina" Ci te informacje, a Ty możesz je wykorzystać w grze (aplikacji). ⚽
-
-## Pytania do przemyślenia
-
-1. Kiedy lepiej użyć zmiennych środowiskowych, a kiedy volume?
-2. Jakie przypadki użycia Downward API widzisz w swoich projektach?
-3. Czy potrafisz wymyślić scenariusz, gdzie Downward API rozwiązałby realny problem?
