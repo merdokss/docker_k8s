@@ -18,13 +18,13 @@ Docker Compose to narzędzie do definiowania i uruchamiania aplikacji składają
 ### Uruchamianie usług
 ```bash
 # Uruchomienie wszystkich usług
-docker-compose up
+docker-compose -p (nazwa-projektu) -f (dockerfile path) up
 
 # Uruchomienie w tle
-docker-compose up -d
+docker-compose -p (nazwa-projektu) -f (dockerfile path) up -d
 
 # Uruchomienie z wymuszonym przebudowaniem
-docker-compose up --build
+docker-compose  -p (nazwa-projektu) -f (dockerfile path) up --build
 ```
 
 ### Budowanie obrazów
