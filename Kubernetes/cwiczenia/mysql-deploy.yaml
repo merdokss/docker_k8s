@@ -26,9 +26,9 @@ spec:
             value: ir2pYdwKea
         resources:
           requests:
-            memory: "200Mi"
+            memory: "24Mi"
             cpu: "250m"
           limits:
-            memory: "512Mi"
+            memory: "64Mi"
             cpu: "300m"
        

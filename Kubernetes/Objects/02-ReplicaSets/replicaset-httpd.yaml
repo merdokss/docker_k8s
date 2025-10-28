@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
-  name: nginx-test
+  name: httpd-test
   labels:
     app: test
 spec:
@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginx
+        image: httpd
         ports:
           - containerPort: 80
