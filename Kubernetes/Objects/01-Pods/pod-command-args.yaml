@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-command-args
+  labels:
+    app: demo
+    type: command-args
+spec:
+  containers:
+  - name: busybox
+    image: busybox:latest
+    # W Kubernetes:
+    # command nadpisuje ENTRYPOINT z Dockerfile
+    # args nadpisuje CMD z Dockerfile
+    #
+    # RÓŻNICA MIĘDZY DOCKER A KUBERNETES:
+    # 
+    # W DOCKERZE:
+    # - CMD jest ŁATWO nadpisać: docker run nginx echo "hello"
+    #   (wystarczy dodać argumenty na końcu komendy)
+    # - ENTRYPOINT jest TRUDNO nadpisać: wymaga flagi --entrypoint
+    #   docker run --entrypoint sh nginx -c "echo hello"
+    #
+    # W KUBERNETES:
+    # - Oba są RÓWNIE ŁATWE do nadpisania:
+    #   command: nadpisuje ENTRYPOINT
+    #   args: nadpisuje CMD
+    #
+    # Jeśli podasz command, ENTRYPOINT z obrazu jest całkowicie ignorowany
+    command: ['sh', '-c']
+    # Jeśli podasz tylko args (bez command), ENTRYPOINT z obrazu jest używany z nowymi argumentami
+    # Jeśli podasz oba (command i args), oba są nadpisane
+    args: ['echo "Hello from Kubernetes!" && sleep 3600']

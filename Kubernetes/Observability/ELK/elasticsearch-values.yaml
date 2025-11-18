@@ -1,9 +1,0 @@
-clusterName: "elasticsearch"
-nodeGroup: "master"
-replicas: 1
-
-
-esConfig:
-  elasticsearch.yml: |
-    xpack.security.enabled: false
-    discovery.type: single-node

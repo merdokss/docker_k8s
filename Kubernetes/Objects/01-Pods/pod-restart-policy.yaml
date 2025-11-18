@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-restart-policy
+  labels:
+    app: demo
+    type: restart-policy
+spec:
+  # RestartPolicy: Always (domyślny), OnFailure, Never
+  restartPolicy: OnFailure
+  containers:
+  - name: busybox
+    image: busybox:latest
+    command: ['sh', '-c', 'echo "This pod will restart on failure" && exit 1']
+
