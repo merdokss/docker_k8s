@@ -14,11 +14,8 @@ spec:
     spec:
       containers:
       - name: nginx-container
-        image: nginx:1.14.2
+        image: nginx:111
         ports:
         - containerPort: 80
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-      maxSurge: 1
+    type: Recreate

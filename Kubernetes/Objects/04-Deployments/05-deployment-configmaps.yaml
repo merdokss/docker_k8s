@@ -17,6 +17,13 @@ spec:
       containers:
         - name: apache
           image: httpd:2.4.39
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
           volumeMounts:
           - readOnly: true
             name: config-volume

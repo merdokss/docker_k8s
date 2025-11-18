@@ -4,7 +4,8 @@ metadata:
   name: nginx-clusterip
 spec:
   selector:    
-    app: nginx
+    app: webapp
+    environment: production
   type: ClusterIP
   ports:  
   - name: http
