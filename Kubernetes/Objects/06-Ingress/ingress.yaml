@@ -5,7 +5,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: todos.local
+  - host: todos-dawid.pl
     http:
       paths:
       - path: /
