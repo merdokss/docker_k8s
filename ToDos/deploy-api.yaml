@@ -19,3 +19,19 @@ spec:
         image: dawidsages.azurecr.io/cezary-api:latest
         ports:
         - containerPort: 3001
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "1m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /api
+            port: 3001
+          initialDelaySeconds: 20
+          periodSeconds: 5
+        env:
+        - name: MONGODB_URI
+          value: mongodb://root:password@mongo-service:27017/todos?authSource=admin
