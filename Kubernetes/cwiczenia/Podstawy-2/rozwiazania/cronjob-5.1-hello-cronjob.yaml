@@ -1,0 +1,18 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hello-cronjob
+  namespace: cwiczenia
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox:latest
+            command: ["/bin/sh", "-c"]
+            args: ["echo 'Scheduled task executed at $(date)'"]
+          restartPolicy: OnFailure
+

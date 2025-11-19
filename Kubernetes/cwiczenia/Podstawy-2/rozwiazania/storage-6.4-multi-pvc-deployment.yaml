@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multi-pvc-deployment
+  namespace: cwiczenia
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: multi-pvc
+  template:
+    metadata:
+      labels:
+        app: multi-pvc
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        volumeMounts:
+        - name: data-rwo
+          mountPath: /data-rwo
+        - name: data-rwm
+          mountPath: /data-rwm
+        - name: data-rom
+          mountPath: /data-rom
+          readOnly: true
+      volumes:
+      - name: data-rwo
+        persistentVolumeClaim:
+          claimName: pvc-rwo
+      - name: data-rwm
+        persistentVolumeClaim:
+          claimName: pvc-rwm
+      - name: data-rom
+        persistentVolumeClaim:
+          claimName: pvc-rom
+

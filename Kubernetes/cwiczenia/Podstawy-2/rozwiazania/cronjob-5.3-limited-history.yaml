@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: limited-history
+  namespace: cwiczenia
+spec:
+  schedule: "*/2 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: task
+            image: busybox:latest
+            command: ["/bin/sh", "-c"]
+            args: ["echo 'Task executed at $(date)'"]
+          restartPolicy: OnFailure
+

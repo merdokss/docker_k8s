@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todos-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      imagePullSecrets:
+      - name: azurecr
+      containers:
+      - name: web
+        image: dawidsages.azurecr.io/cezary-web:latest
+        ports:
+        - containerPort: 3000

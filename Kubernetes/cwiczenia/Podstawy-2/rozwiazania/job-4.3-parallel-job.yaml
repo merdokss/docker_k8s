@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: parallel-job
+  namespace: cwiczenia
+spec:
+  completions: 10
+  parallelism: 3
+  template:
+    spec:
+      containers:
+      - name: task
+        image: busybox:latest
+        command: ["/bin/sh", "-c"]
+        args: ["echo 'Task $TASK_ID' && sleep 10"]
+        env:
+        - name: TASK_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+      restartPolicy: Never
+  backoffLimit: 4
+

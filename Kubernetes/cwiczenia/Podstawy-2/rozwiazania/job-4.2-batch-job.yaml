@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: batch-job
+  namespace: cwiczenia
+spec:
+  completions: 5
+  parallelism: 1
+  template:
+    spec:
+      containers:
+      - name: processor
+        image: busybox:latest
+        command: ["/bin/sh", "-c"]
+        args: ["echo 'Processing item $ITEM' && sleep 2"]
+        env:
+        - name: ITEM
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+      restartPolicy: Never
+  backoffLimit: 4
+
