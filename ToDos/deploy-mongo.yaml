@@ -24,3 +24,7 @@ spec:
           value: password
         - name: MONGO_INITDB_DATABASE
           value: todos
+      volumes:
+      - name: mongo-data
+        persistentVolumeClaim:
+          claimName: mongo-pvc

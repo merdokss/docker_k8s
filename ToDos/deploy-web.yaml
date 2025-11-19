@@ -34,4 +34,4 @@ spec:
         #   periodSeconds: 5
         env:
         - name: REACT_APP_API_URL
-          value: "http://4.245.172.254:3001/api"
+          value: "http://4.245.171.140:3001/api"
