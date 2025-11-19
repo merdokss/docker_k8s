@@ -24,6 +24,9 @@ spec:
           value: password
         - name: MONGO_INITDB_DATABASE
           value: todos
+        volumeMounts:
+        - name: mongo-data
+          mountPath: /data/db
       volumes:
       - name: mongo-data
         persistentVolumeClaim:
