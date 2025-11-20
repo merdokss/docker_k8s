@@ -6,30 +6,30 @@
      podSelector: {}  # Zastosuj do wszystkich podów w namespace
      policyTypes:
      - Ingress
-     - Egress
+    #  - Egress
      ingress:
      - from:
        - podSelector: {}  # Pozwala na komunikację tylko z podów w tym samym namespace
-     egress:
-     # Pozwól na ruch DNS
-     - to:
-       - namespaceSelector:
-           matchLabels:
-             kubernetes.io/metadata.name: kube-system
-       ports:
-       - protocol: UDP
-         port: 53
-       - protocol: TCP
-         port: 53
-     # Pozwól na ruch do serwisów w tym samym namespace
-     - to:
-       - namespaceSelector:
-           matchLabels:
-             kubernetes.io/metadata.name: dawid  # Nazwa twojego namespace
-       ports:
-       - protocol: TCP
-         port: 80
-       - protocol: TCP
-         port: 443
-       - protocol: TCP
-         port: 88
+    #  egress:
+    #  # Pozwól na ruch DNS
+    #  - to:
+    #    - namespaceSelector:
+    #        matchLabels:
+    #          kubernetes.io/metadata.name: kube-system
+    #    ports:
+    #    - protocol: UDP
+    #      port: 53
+    #    - protocol: TCP
+    #      port: 53
+    #  # Pozwól na ruch do serwisów w tym samym namespace
+    #  - to:
+    #    - namespaceSelector:
+    #        matchLabels:
+    #          kubernetes.io/metadata.name: dawid  # Nazwa twojego namespace
+    #    ports:
+    #    - protocol: TCP
+    #      port: 80
+    #    - protocol: TCP
+    #      port: 443
+    #    - protocol: TCP
+    #      port: 88
