@@ -11,8 +11,8 @@ spec:
       cpu: 500m      # 0.5 rdzenia CPU
       memory: 512Mi  # 512 MB pamięci
     defaultRequest:  # Domyślne wartości requestów, jeśli nie są określone w podzie
-      cpu: 100m      # 0.1 rdzenia CPU
-      memory: 128Mi  # 128 MB pamięci
+      cpu: 500m      # 0.1 rdzenia CPU
+      memory: 512Mi  # 128 MB pamięci
     min:             # Minimalne dozwolone wartości
       cpu: 50m       # 0.05 rdzenia CPU
       memory: 64Mi   # 64 MB pamięci

@@ -3,15 +3,15 @@ kind: Ingress
 metadata:
   name: todos-ingress-tls
   annotations:
-    cert-manager.io/cluster-issuer: "selfsigned-issuer"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - todos-dawid.pl
-    secretName: todos-dawid.pl
+    - dawidapp.mooo.com
+    secretName: dawidapp.mooo.com
   rules:
-  - host: todos-dawid.pl
+  - host: dawidapp.mooo.com
     http:
       paths:
       - path: /
