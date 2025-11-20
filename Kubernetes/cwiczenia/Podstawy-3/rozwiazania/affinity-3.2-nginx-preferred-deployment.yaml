@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-preferred
+  namespace: cwiczenia
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-preferred
+  template:
+    metadata:
+      labels:
+        app: nginx-preferred
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: environment
+                operator: In
+                values:
+                - production
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+

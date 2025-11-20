@@ -1,0 +1,24 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: rabbitmq-consumer-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: rabbitmq-consumer
+  minReplicaCount: 0      # Może skalować do 0 replik
+  maxReplicaCount: 10     # Maksymalnie 10 replik
+  pollingInterval: 10     # Sprawdzaj metryki co 10 sekund
+  cooldownPeriod: 300     # Czekaj 5 minut przed skalowaniem do 0
+  triggers:
+  - type: rabbitmq
+    metadata:
+      protocol: auto
+      queueName: test-queue
+      mode: QueueLength
+      value: "5"          # Jedna replika na każde 5 wiadomości w kolejce
+      host: amqp://guest:guest@rabbitmq.default.svc.cluster.local:5672
+      # Alternatywnie możesz użyć TriggerAuthentication:
+      # authenticationRef:
+      #   name: rabbitmq-auth
+

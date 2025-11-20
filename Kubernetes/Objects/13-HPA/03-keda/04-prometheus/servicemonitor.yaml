@@ -1,0 +1,18 @@
+# ServiceMonitor dla Prometheus Operator
+# Używaj tylko jeśli masz zainstalowany Prometheus Operator
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: my-app-monitor
+  labels:
+    app: my-app-with-metrics
+spec:
+  selector:
+    matchLabels:
+      app: my-app-with-metrics
+  endpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics
+

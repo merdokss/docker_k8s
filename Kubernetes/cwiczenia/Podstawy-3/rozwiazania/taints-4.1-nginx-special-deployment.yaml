@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-special
+  namespace: cwiczenia
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-special
+  template:
+    metadata:
+      labels:
+        app: nginx-special
+    spec:
+      tolerations:
+      - key: special-node
+        operator: Equal
+        value: "true"
+        effect: NoSchedule
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+

@@ -1,0 +1,17 @@
+# Przykładowy pod, który będzie podlegał ograniczeniom z LimitRange
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-pod
+  namespace: dawid  # Pod musi być w tym samym namespace co LimitRange
+spec:
+  containers:
+  - name: nginx
+    image: nginx:latest
+    # Nie określamy limitów zasobów - zostaną zastosowane domyślne wartości z LimitRange:
+    # - CPU request: 100m (0.1 rdzenia)
+    # - CPU limit: 500m (0.5 rdzenia)
+    # - Memory request: 128Mi
+    # - Memory limit: 512Mi
+    ports:
+    - containerPort: 80  # Standardowy port dla nginx 

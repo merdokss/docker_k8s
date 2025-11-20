@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitored-app
+  namespace: cwiczenia
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: monitored
+  template:
+    metadata:
+      labels:
+        app: monitored
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+

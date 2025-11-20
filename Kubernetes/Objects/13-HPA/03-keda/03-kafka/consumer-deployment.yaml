@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-consumer
+spec:
+  replicas: 0  # KEDA będzie zarządzać liczbą replik
+  selector:
+    matchLabels:
+      app: kafka-consumer
+  template:
+    metadata:
+      labels:
+        app: kafka-consumer
+    spec:
+      containers:
+      - name: consumer
+        image: confluentinc/cp-kafka:7.5.0
+        command:
+        - sh
+        - -c
+        - |
+          echo "Starting Kafka consumer..."
+          kafka-console-consumer \
+            --bootstrap-server kafka.default.svc.cluster.local:9092 \
+            --topic test-topic \
+            --group my-consumer-group \
+            --from-beginning
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+

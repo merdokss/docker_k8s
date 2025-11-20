@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deploy-binding
+  namespace: cwiczenia
+subjects:
+- kind: ServiceAccount
+  name: deploy-sa
+  namespace: cwiczenia
+roleRef:
+  kind: Role
+  name: deployment-manager
+  apiGroup: rbac.authorization.k8s.io
+

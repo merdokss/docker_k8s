@@ -111,18 +111,120 @@ W Kubernetes, LivenessProbe i ReadinessProbe to mechanizmy, które pozwalają na
        periodSeconds: 3
      ```
 
-### Różnice między LivenessProbe a ReadinessProbe
 
-- **Cel**:
-  - LivenessProbe: Sprawdza, czy aplikacja działa poprawnie. Jeśli nie, pod jest restartowany.
-  - ReadinessProbe: Sprawdza, czy aplikacja jest gotowa do obsługi ruchu. Jeśli nie, pod jest oznaczony jako "niedostępny" i nie obsługuje ruchu.
 
-- **Skutki**:
-  - LivenessProbe: Niepowodzenie prowadzi do restartu poda.
-  - ReadinessProbe: Niepowodzenie prowadzi do oznaczenia poda jako "niedostępny" bez restartu.
+## Readiness Probe vs Liveness Probe - Tabele Porównawcze
 
-- **Zastosowanie**:
-  - LivenessProbe: Używana do automatycznego naprawiania aplikacji, które przestały działać poprawnie.
-  - ReadinessProbe: Używana do kontrolowania, kiedy pod może obsługiwać ruch, co jest szczególnie przydatne podczas startu aplikacji lub aktualizacji.
+### Tabela 1: Podstawowe Różnice
 
-Oba mechanizmy są kluczowe dla zapewnienia wysokiej dostępności i niezawodności aplikacji uruchomionych w Kubernetes.
+| Cecha | Readiness Probe | Liveness Probe |
+|-------|-----------------|----------------|
+| **Pytanie** | Czy jestem gotowy przyjmować ruch? | Czy jestem żywy i działam poprawnie? |
+| **Gdy FAIL** | Pod **nie dostaje ruchu** (usunięty z Service) | Pod jest **restartowany** przez Kubernetes |
+| **Status poda** | Pod działa, ale jest oznaczony jako NotReady | Pod jest killowany i tworzony na nowo |
+| **Kiedy sprawdza** | Od razu po `initialDelaySeconds` | Od razu po `initialDelaySeconds` |
+| **Częstotliwość** | Co `periodSeconds` (np. co 5s) | Co `periodSeconds` (np. co 10s) |
+| **Wpływ na Rolling Update** | ✅ **Blokuje** deployment jeśli FAIL | ❌ **Nie blokuje** - pody się restartują |
+| **Ochrona przed złym wdrożeniem** | ✅ **TAK** - zatrzymuje rollout | ❌ **NIE** - pozwala podom wystartować |
+| **Wpływ na użytkowników** | Zero błędów - ruch idzie do zdrowych podów | Możliwe błędy podczas oczekiwania na restart |
+| **Można wyłączyć po starcie** | ✅ TAK - pod może stać się NotReady | ✅ TAK - wymusza restart |
+| **Typowy use case** | Aplikacja startuje, ładuje cache, czeka na DB | Wykrywanie deadlocków, wycieków pamięci |
+
+### Tabela 2: Scenariusze Deployment (4 repliki)
+
+| Scenariusz | Bez Readiness (tylko Liveness) | Z Readiness + Liveness |
+|------------|--------------------------------|------------------------|
+| **Nowa wersja aplikacji ma błąd 500** | ❌ Nowe pody dostają ruch przez 30s (initialDelay), użytkownicy dostają błędy, potem CrashLoopBackOff | ✅ Nowe pody NIE dostają ruchu, rollout zatrzymany, stare pody działają |
+| **Nowa wersja ma błąd startowy** | ❌ Pod wystartuje, dostanie ruch, będzie sypać błędami, restart po 30s | ✅ Pod wystartuje, NIE dostanie ruchu, rollout zatrzymany |
+| **Aplikacja zawiesza się po 5 minutach** | ✅ Liveness wykryje po 3x fail i zrestartuje | ✅ Readiness+Liveness: usunięty z Service + restart |
+| **Aplikacja potrzebuje 60s na start (cache)** | ❌ Dostanie ruch za wcześnie (jeśli initialDelay < 60s) | ✅ Readiness czeka aż aplikacja potwierdzi gotowość |
+| **Deployment nowej wersji** | ❌ Rolling update **kontynuowany** mimo błędów | ✅ Rolling update **zatrzymany** po pierwszym złym podzie |
+| **Stan klastra po złym deploymencie** | Część podów w CrashLoopBackOff, część starych działa | Wszystkie stare pody działają, nowe pody czekają |
+
+### Tabela 3: Timeline Złego Deploymentu
+
+| Czas | Tylko Liveness | Readiness + Liveness |
+|------|----------------|----------------------|
+| **T=0s** | Nowy pod #5 startuje | Nowy pod #5 startuje |
+| **T=1s** | ✅ Pod "Ready" (brak Readiness) | ⏳ Czeka na pierwszą Readiness probe |
+| **T=1s** | ❌ Pod dodany do Service | ⏳ Pod NIE w Service |
+| **T=1-30s** | 💥 **Users dostają 500 errors!** | ✅ Ruch idzie do starych podów |
+| **T=5s** | - | ❌ Readiness: FAIL #1 |
+| **T=10s** | - | ❌ Readiness: FAIL #2 |
+| **T=15s** | - | ❌ Readiness: FAIL #3 → Pod NotReady |
+| **T=30s** | ❌ Liveness: FAIL #1 | ❌ Liveness: FAIL #1 |
+| **T=40s** | ❌ Liveness: FAIL #2 | ❌ Liveness: FAIL #2 |
+| **T=50s** | ❌ Liveness: FAIL #3 → **RESTART** | ❌ Liveness: FAIL #3 → **RESTART** |
+| **T=51s** | ✅ Po restarcie znowu "Ready" | ⏳ Po restarcie czeka na Readiness |
+| **T=51-80s** | 💥 **Users znowu dostają błędy!** | ✅ Ruch dalej do starych podów |
+| **T=80s+** | 🔁 CrashLoopBackOff (z opóźnieniem) | 🔁 CrashLoopBackOff (ale bez wpływu na users) |
+| **Stan końcowy** | ⚠️ Deployment częściowo failed, users mieli downtime | ✅ Deployment zatrzymany, zero downtime |
+
+### Tabela 4: Konfiguracja - Best Practices
+
+| Parametr | Readiness Probe | Liveness Probe | Uzasadnienie |
+|----------|-----------------|----------------|---------------|
+| **initialDelaySeconds** | 5-10s | 30-60s | Readiness sprawdza wcześnie; Liveness daje czas na start |
+| **periodSeconds** | 5s | 10s | Readiness częściej (szybka reakcja na problemy) |
+| **timeoutSeconds** | 3s | 5s | Readiness szybsza; Liveness może czekać dłużej |
+| **successThreshold** | 1 | 1 | Pojedyncze potwierdzenie wystarczy |
+| **failureThreshold** | 3 | 3 | 3 nieudane próby = problem (15s dla Readiness, 30s dla Liveness) |
+| **Endpoint** | `/ready` lub `/health/ready` | `/health` lub `/healthz` | Osobne endpointy dla różnych sprawdzeń |
+
+### Tabela 5: Rodzaje Probe
+
+| Typ | Przykład | Kiedy używać |
+|-----|----------|--------------|
+| **httpGet** | `path: /ready`<br>`port: 8080` | ✅ REST API, web aplikacje (NAJCZĘŚCIEJ) |
+| **tcpSocket** | `port: 3306` | ✅ Bazy danych, TCP services (MySQL, Redis) |
+| **exec** | `command: ["cat", "/tmp/ready"]` | ✅ Niestandardowe sprawdzenia, legacy apps |
+| **grpc** | `port: 9090`<br>`service: myservice` | ✅ gRPC services (K8s 1.24+) |
+
+### Tabela 6: Statusy Poda
+
+| Status | Readiness = PASS | Readiness = FAIL | Liveness = FAIL |
+|--------|------------------|------------------|-----------------|
+| **Pod Status** | Running | Running | Running → Restart |
+| **Ready Condition** | True (1/1) | False (0/1) | - |
+| **W Service** | ✅ TAK | ❌ NIE | ✅ TAK (do momentu restartu) |
+| **Dostaje ruch** | ✅ TAK | ❌ NIE | ✅ TAK (do momentu restartu) |
+| **kubectl get pods** | `myapp-xxx 1/1 Running` | `myapp-xxx 0/1 Running` | `myapp-xxx 0/1 CrashLoopBackOff` |
+| **Rollout status** | Progressing | Stuck/Failed | Progressing (ale pody restartują) |
+
+### Tabela 7: Co sprawdzać w każdej probe?
+
+| Sprawdzenie | Readiness Probe | Liveness Probe |
+|-------------|-----------------|----------------|
+| **Podstawowe API działa** | ✅ TAK | ✅ TAK |
+| **Połączenie z bazą danych** | ✅ TAK | ❌ NIE* |
+| **Zależności zewnętrzne (API, cache)** | ✅ TAK | ❌ NIE* |
+| **Pamięć dostępna** | ⚠️ Opcjonalnie | ✅ TAK |
+| **Deadlock detection** | ❌ NIE | ✅ TAK |
+| **Cache załadowany** | ✅ TAK | ❌ NIE |
+| **Credentials ważne** | ✅ TAK | ⚠️ Opcjonalnie |
+
+\* **Uwaga:** Liveness NIE powinien sprawdzać zależności zewnętrznych, bo jeśli DB padnie, wszystkie pody się zrestartują (co nie pomoże).
+
+### Tabela 8: Błędy i Konsekwencje
+
+| Błąd konfiguracji | Konsekwencja | Jak naprawić |
+|-------------------|--------------|--------------|
+| Brak Readiness Probe | Złe pody dostają ruch podczas deploymentu | Dodaj Readiness: httpGet /ready |
+| Liveness = Readiness (ten sam endpoint) | Podczas przeciążenia pody się restartują | Użyj osobnych endpointów |
+| Za krótki initialDelaySeconds | Pody failują przed startem aplikacji | Zwiększ do czasu startu +10s |
+| Za długi initialDelaySeconds | Wolny rollout, opóźnione wykrycie problemów | Zmniejsz, użyj startupProbe |
+| Zbyt agresywny failureThreshold=1 | Fałszywe alarmy, niepotrzebne restarty | Ustaw na 3 (lub więcej) |
+| Liveness sprawdza DB | Jak DB padnie, wszystkie pody się restartują | Liveness = tylko stan aplikacji |
+| Brak timeout | Pody wiszą w nieskończoność | Ustaw timeoutSeconds: 3-5s |
+
+### Tabela 9: Komendy diagnostyczne
+
+| Co sprawdzić | Komenda | Co pokazuje |
+|--------------|---------|-------------|
+| Status podów | `kubectl get pods` | Ready (1/1) vs NotReady (0/1) |
+| Szczegóły probe | `kubectl describe pod <name>` | Historia Readiness/Liveness events |
+| Dlaczego NotReady | `kubectl describe pod <name> \| grep -A 10 Conditions` | Readiness failed reason |
+| Logi aplikacji | `kubectl logs <pod>` | Błędy aplikacji |
+| Rollout status | `kubectl rollout status deployment/<name>` | Czy deployment progresuje |
+| Events w czasie | `kubectl get events --sort-by=.metadata.creationTimestamp` | Timeline co się działo |
+| Probes config | `kubectl get pod <name> -o yaml \| grep -A 15 Probe` | Aktualna konfiguracja probe |

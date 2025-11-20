@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-quota
+  namespace: cwiczenia
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-quota
+  template:
+    metadata:
+      labels:
+        app: nginx-quota
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: "1"
+            memory: 1Gi
+

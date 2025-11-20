@@ -1,0 +1,67 @@
+# Krok 1: Dodanie Taint do węzła (przykładowa komenda kubectl)
+# Aby ten przykład zadziałał, jeden z Twoich węzłów musi mieć dodany Taint.
+# Zastąp <node-name> nazwą swojego węzła.
+# kubectl taint nodes <node-name> dedicated=data-processing:NoSchedule
+
+# Krok 2: Przykład Poda z Toleration, który MOŻE działać na skażonym węźle
+apiVersion: v1
+kind: Pod
+metadata:
+  name: data-processor-pod
+  labels:
+    app: data-processor
+spec:
+  containers:
+  - name: data-processor-container
+    image: busybox
+    command: ['sh', '-c', 'echo "Przetwarzam dane..."; sleep 3600']
+  tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: "data-processing"
+    effect: "NoSchedule"
+
+---
+
+# Krok 3: Przykład Poda BEZ Toleration, który NIE powinien działać na skażonym węźle
+apiVersion: v1
+kind: Pod
+metadata:
+  name: general-purpose-pod
+  labels:
+    app: general-app
+spec:
+  containers:
+  - name: general-container
+    image: nginx:latest
+    ports:
+    - containerPort: 80
+# Ten Pod nie ma tolerancji dla "dedicated=data-processing:NoSchedule",
+# więc nie zostanie zaplanowany na węźle z takim Taintem.
+
+---
+
+# Krok 4: Przykład Poda z Toleration dla efektu NoExecute i tolerationSeconds
+# Taki Pod będzie tolerował niedostępność węzła przez 60 sekund
+apiVersion: v1
+kind: Pod
+metadata:
+  name: resilient-pod
+spec:
+  containers:
+  - name: resilient-container
+    image: busybox
+    command: ['sh', '-c', 'echo "Działam i jestem odporny..."; sleep 3600']
+  tolerations:
+  - key: "node.kubernetes.io/unreachable"
+    operator: "Exists"
+    effect: "NoExecute"
+    tolerationSeconds: 60
+  - key: "node.kubernetes.io/not-ready"
+    operator: "Exists"
+    effect: "NoExecute"
+    tolerationSeconds: 60
+# Uwaga: Domyślnie Kubernetes dodaje tolerancje dla not-ready/unreachable
+# na 5 minut (300s) do Podów, chyba że są one częścią DaemonSet lub
+# mają zdefiniowane własne tolerancje dla tych kluczy.
+# Ten przykład pokazuje jak można to nadpisać. 
