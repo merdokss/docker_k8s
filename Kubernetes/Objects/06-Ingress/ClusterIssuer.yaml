@@ -11,4 +11,4 @@
         solvers:
         - http01:
             ingress:
-              class: webapprouting.kubernetes.azure.com
+              class: nginx
