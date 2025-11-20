@@ -4,13 +4,11 @@ metadata:
   name: allow-ingress-controller
   namespace: default
 spec:
-  podSelector:
-    matchLabels:
-      app: nginx-demo
+  podSelector: {}
   policyTypes:
   - Ingress
   ingress:
-  # Pozwól na ruch z namespace app-routing-system (ingress controller)
+  # Pozwól na ruch z namespace ingress-nginx (ingress controller)
   - from:
     - namespaceSelector:
         matchLabels:
