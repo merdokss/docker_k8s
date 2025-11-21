@@ -1,0 +1,112 @@
+# MetalLB Configuration - Advanced Setup
+# Zaawansowana konfiguracja z wieloma pulami IP i różnymi przeznaczeniami
+# 
+# Przykład użycia:
+# - production-pool: dla aplikacji produkcyjnych
+# - development-pool: dla aplikacji deweloperskich
+# - staging-pool: dla środowiska staging
+#
+# Instalacja:
+# 1. Zainstaluj MetalLB: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.15.2/config/manifests/metallb-native.yaml
+# 2. Zastosuj tę konfigurację: kubectl apply -f metallb-config-advanced.yaml
+# 3. Sprawdź: kubectl get ipaddresspool,l2advertisement -n metallb-system
+
+---
+# Pula adresów IP dla środowiska produkcyjnego
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: production-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.1.100-192.168.1.120  # 21 adresów
+  autoAssign: true
+
+---
+# Pula adresów IP dla środowiska deweloperskiego
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: development-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.1.200-192.168.1.210  # 11 adresów
+  autoAssign: true
+
+---
+# Pula adresów IP dla środowiska staging
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: staging-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.1.150-192.168.1.160  # 11 adresów
+  autoAssign: true
+
+---
+# Pula z wyłączonym automatycznym przypisywaniem
+# Wymaga ręcznego przypisania przez adnotację w Service
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: manual-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.1.50
+    - 192.168.1.51
+    - 192.168.1.52
+  autoAssign: false  # Tylko ręczne przypisanie
+
+---
+# Ogłoszenie Layer 2 dla puli produkcyjnej
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: production-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - production-pool
+  # Opcjonalnie: ograniczenie do węzłów produkcyjnych
+  # nodeSelectors:
+  #   - matchLabels:
+  #       node-role.kubernetes.io/worker: ""
+
+---
+# Ogłoszenie Layer 2 dla puli deweloperskiej
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: development-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - development-pool
+
+---
+# Ogłoszenie Layer 2 dla puli staging
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: staging-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - staging-pool
+
+---
+# Ogłoszenie Layer 2 dla puli manualnej
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: manual-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - manual-pool
+

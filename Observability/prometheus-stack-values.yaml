@@ -1,0 +1,89 @@
+# Values dla kube-prometheus-stack
+# Instalacja: helm install prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring -f prometheus-stack-values.yaml
+
+# Prometheus konfiguracja
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    podMonitorNamespaceSelector: {}
+
+# Grafana konfiguracja
+grafana:
+  enabled: true
+  adminUser: admin
+  adminPassword: admin123  # Zmień w produkcji!
+  
+  persistence:
+    enabled: true
+    size: 10Gi
+  
+  service:
+    type: LoadBalancer
+    port: 80
+  
+  # Datasources będą skonfigurowane przez grafana-datasources.yaml
+  
+  # Dashboardy
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+  
+  dashboards:
+    default:
+      kubernetes-cluster:
+        gnetId: 7249
+        revision: 1
+        datasource: Prometheus
+      kubernetes-pods:
+        gnetId: 6417
+        revision: 1
+        datasource: Prometheus
+
+# Alertmanager
+alertmanager:
+  enabled: true
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by: ['alertname']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      receiver: 'default'
+    receivers:
+    - name: 'default'
+      # W produkcji dodaj webhook/email/slack
+
+# Node Exporter
+nodeExporter:
+  enabled: true
+
+# Kube State Metrics
+kubeStateMetrics:
+  enabled: true
+
+# Prometheus Operator
+prometheusOperator:
+  enabled: true
+

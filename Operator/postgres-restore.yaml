@@ -1,0 +1,37 @@
+# Restore PostgreSQL z backupu
+# Utworzy nowy klaster z danymi z backupu
+
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-restored
+  namespace: postgres
+spec:
+  instances: 3
+  
+  imageName: docker.io/postgres:15
+  
+  storage:
+    size: 20Gi
+    storageClass: standard
+  
+  # Bootstrap z backupu
+  bootstrap:
+    recovery:
+      # Źródło - istniejący klaster
+      source: postgres-ha
+      
+      # Backup do użycia
+      backup:
+        name: backup-manual-20240115  # Zmień na nazwę swojego backupu (sprawdź: kubectl get backup -n postgres)
+      
+      # Opcjonalnie: point-in-time recovery
+      # recoveryTarget:
+      #   targetTime: "2024-01-15 10:00:00"
+      #   targetXID: "12345"
+  
+  postgresql:
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"
+

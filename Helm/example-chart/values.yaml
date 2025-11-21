@@ -1,0 +1,88 @@
+# Konfiguracja głównej aplikacji
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: "1.21"
+  pullPolicy: IfNotPresent
+
+# Konfiguracja zasobów
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+# Konfiguracja serwisu
+service:
+  type: ClusterIP
+  port: 80
+
+# Konfiguracja ingress
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+# Konfiguracja prometheusa
+prometheus:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 15s
+    scrapeTimeout: 10s
+    path: /metrics
+    port: metrics
+
+# Konfiguracja autoscaling
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Konfiguracja persistent volume
+persistence:
+  enabled: false
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi
+
+# Konfiguracja service account
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Nadpisanie nazwy
+nameOverride: ""
+fullnameOverride: ""
+
+# Adnotacje podów
+podAnnotations: {}
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Security context dla podów
+podSecurityContext: {}
+
+# Security context dla kontenerów
+securityContext: {}
+
+# Node selector
+nodeSelector: {}
+
+# Affinity rules
+affinity: {}
+
+# Tolerations
+tolerations: [] 

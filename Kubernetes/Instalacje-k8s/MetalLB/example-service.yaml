@@ -1,0 +1,125 @@
+# Przykładowe usługi LoadBalancer z MetalLB
+# 
+# Użycie:
+# kubectl apply -f example-service.yaml
+# kubectl get svc
+# curl http://<EXTERNAL-IP>
+
+---
+# Przykład 1: Podstawowa usługa LoadBalancer
+# MetalLB automatycznie przypisze adres IP z dostępnej puli
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-basic
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: nginx
+
+---
+# Przykład 2: Usługa z konkretną pulą IP
+# Wymaga adnotacji wskazującej na konkretną pulę
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-production
+  annotations:
+    # Przypisz IP z konkretnej puli
+    metallb.universe.tf/ip-allocated-from-pool: production-pool
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: nginx
+
+---
+# Przykład 3: Usługa z konkretnym adresem IP
+# Wymaga adnotacji z dokładnym adresem IP
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-static-ip
+  annotations:
+    # Przypisz konkretny adres IP (musi być w puli)
+    metallb.universe.tf/loadBalancerIPs: 192.168.1.100
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: nginx
+
+---
+# Przykład 4: Wieloportowa usługa LoadBalancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: multi-port-service
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: 8443
+      protocol: TCP
+    - name: api
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+  selector:
+    app: my-app
+
+---
+# Przykład 5: Usługa z puli manualnej (autoAssign: false)
+# Wymaga ręcznego przypisania przez adnotację
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-manual
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: 192.168.1.50
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: nginx
+
+---
+# Deployment nginx do testowania powyższych usług
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+

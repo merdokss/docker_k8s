@@ -1,0 +1,124 @@
+# TRADYCYJNE podejście - Deployment + PVC
+# Porównaj z postgres-cluster-basic.yaml (Operator)
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: postgres
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: postgres
+type: Opaque
+stringData:
+  POSTGRES_USER: myapp
+  POSTGRES_PASSWORD: myapp-password
+  POSTGRES_DB: myapp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+  namespace: postgres
+  labels:
+    app: postgres
+spec:
+  replicas: 1  # Tylko 1 instancja - brak HA!
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_DB
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: postgres
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  selector:
+    app: postgres
+
+---
+# UWAGI: Co brakuje w tradycyjnym podejściu?
+# ❌ Brak automatycznego backupu
+# ❌ Brak automatycznego failover
+# ❌ Brak replikacji (tylko 1 instancja)
+# ❌ Ręczne zarządzanie upgrade'ami
+# ❌ Brak point-in-time recovery
+# ❌ Ręczne zarządzanie konfiguracją
+# ❌ Brak automatycznego monitoringu
+# 
+# Operator rozwiązuje wszystkie te problemy!
+

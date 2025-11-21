@@ -1,0 +1,53 @@
+# Values dla Grafana Tempo
+# Instalacja: helm install tempo grafana/tempo -n monitoring -f tempo-values.yaml
+
+tempo:
+  # Backend storage - dla demo używamy lokalnego storage
+  storage:
+    trace:
+      backend: local
+      local:
+        path: /var/tempo/traces
+      pool:
+        max_workers: 100
+        queue_depth: 10000
+  
+  # Overrides - włączamy metrics generator dla wszystkich tenantów
+  # Metrics generator wymaga storage path
+  overrides:
+    defaults:
+      metrics_generator:
+        storage:
+          path: /var/tempo/generator
+        remote_write:
+          - url: http://prometheus-stack-kube-prom-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+        processors:
+          - service-graphs
+          - span-metrics
+        collection_interval: 30s
+
+# Metrics Generator - wymagany dla zapytań metrics w TraceQL (rate, histogram)
+metricsGenerator:
+  enabled: true
+  remoteWriteUrl: "http://prometheus-stack-kube-prom-prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
+
+# Service
+service:
+  type: ClusterIP
+  port: 3200
+
+# Persistence
+persistence:
+  enabled: true
+  size: 20Gi
+  storageClassName: ""  # Użyj domyślnego storage class
+
+# Resources
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+

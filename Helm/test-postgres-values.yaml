@@ -1,0 +1,8 @@
+auth:
+  postgresPassword: "moje-super-haslo"
+  database: "moja-baza"
+primary:
+  persistence:
+    enabled: true
+    size: 8Gi
+

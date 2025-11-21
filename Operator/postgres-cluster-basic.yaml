@@ -1,0 +1,48 @@
+# Podstawowy klaster PostgreSQL z CloudNativePG Operator
+# Minimalna konfiguracja - 1 instancja PostgreSQL
+
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-basic
+  namespace: postgres
+spec:
+  instances: 1
+  
+  # Obraz PostgreSQL
+  imageName: docker.io/postgres:15
+  
+  # Storage
+  storage:
+    size: 10Gi
+    storageClass: standard  # Zmień na dostępną storage class w swoim klastrze
+  
+  # Konfiguracja PostgreSQL
+  postgresql:
+    parameters:
+      max_connections: "100"
+      shared_buffers: "128MB"
+      effective_cache_size: "512MB"
+  
+  # Dane dostępowe (użyj Secret w produkcji!)
+  bootstrap:
+    initdb:
+      database: myapp
+      owner: myapp
+      secret:
+        name: postgres-credentials
+
+---
+# Secret z hasłami (przykład - w produkcji użyj external secrets!)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-credentials
+  namespace: postgres
+type: Opaque
+stringData:
+  username: myapp
+  password: myapp-password
+  # Operator automatycznie utworzy użytkownika 'postgres' z tym hasłem
+  _pgbouncer_pooler_password: pooler-password
+

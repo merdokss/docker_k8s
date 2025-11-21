@@ -34,4 +34,7 @@ spec:
           periodSeconds: 5
         env:
         - name: MONGODB_URI
-          value: mongodb://root:password@mongo-service:27017/todos?authSource=admin
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: mongodb-uri

@@ -1,0 +1,84 @@
+# MetalLB Configuration - BGP Mode
+# Przykładowa konfiguracja dla trybu BGP (zaawansowany tryb)
+# 
+# Wymagania:
+# - Routery z obsługą protokołu BGP
+# - Znajomość ASN (Autonomous System Number)
+# - Konfiguracja routerów do akceptacji sesji BGP z węzłów Kubernetes
+#
+# Instalacja:
+# 1. Zainstaluj MetalLB: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.15.2/config/manifests/metallb-native.yaml
+# 2. Zastosuj tę konfigurację: kubectl apply -f metallb-config-bgp.yaml
+# 3. Sprawdź: kubectl get ipaddresspool,bgppeer,bgpadvertisement -n metallb-system
+
+---
+# Pula adresów IP dla usług LoadBalancer
+# UWAGA: Zmień zakres adresów na dostępne w Twojej sieci!
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: bgp-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    # Zakres adresów IP do przypisania usługom LoadBalancer
+    # Przykład: 10.0.0.100-10.0.0.200 (101 adresów)
+    - 10.0.0.100-10.0.0.200
+  autoAssign: true
+
+---
+# Konfiguracja BGP Peer - Router 1
+# UWAGA: Zmień wartości na odpowiadające Twojej infrastrukturze!
+apiVersion: metallb.io/v1beta1
+kind: BGPPeer
+metadata:
+  name: router-1
+  namespace: metallb-system
+spec:
+  # Adres IP routera BGP
+  peerAddress: 192.168.1.1
+  # ASN (Autonomous System Number) routera
+  peerASN: 64512
+  # ASN klastra Kubernetes
+  myASN: 64513
+  # Opcjonalnie: hasło dla MD5 authentication
+  # password: "secret-password"
+  # Opcjonalnie: ograniczenie do konkretnych węzłów
+  # nodeSelectors:
+  #   - matchLabels:
+  #       kubernetes.io/hostname: node-1
+
+---
+# Konfiguracja BGP Peer - Router 2 (opcjonalnie, dla redundancji)
+# UWAGA: Zmień wartości na odpowiadające Twojej infrastrukturze!
+apiVersion: metallb.io/v1beta1
+kind: BGPPeer
+metadata:
+  name: router-2
+  namespace: metallb-system
+spec:
+  peerAddress: 192.168.1.2
+  peerASN: 64512
+  myASN: 64513
+  # password: "secret-password"
+
+---
+# Ogłoszenie adresów IP przez protokół BGP
+apiVersion: metallb.io/v1beta1
+kind: BGPAdvertisement
+metadata:
+  name: bgp-advertisement
+  namespace: metallb-system
+spec:
+  # Referencja do puli adresów IP
+  ipAddressPools:
+    - bgp-pool
+  # Referencje do skonfigurowanych peerów BGP
+  peers:
+    - router-1
+    - router-2
+  # Opcjonalnie: BGP communities
+  # communities:
+  #   - 64512:100
+  #   - 64512:200
+

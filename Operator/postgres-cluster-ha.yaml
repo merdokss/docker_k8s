@@ -1,0 +1,96 @@
+# Wysokiej dostępności klaster PostgreSQL z replikacją
+# 3 instancje z automatycznym failover
+
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-ha
+  namespace: postgres
+spec:
+  # 3 instancje - 1 primary + 2 replicas
+  instances: 3
+  
+  imageName: docker.io/postgres:15
+  
+  # Storage dla każdej instancji
+  storage:
+    size: 20Gi
+    storageClass: standard
+  
+  # Konfiguracja PostgreSQL
+  postgresql:
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"
+      effective_cache_size: "1GB"
+      wal_level: "replica"
+      max_wal_senders: "10"
+      max_replication_slots: "10"
+      hot_standby: "on"
+  
+  # Backup configuration
+  backup:
+    barmanObjectStore:
+      destinationPath: s3://postgres-backups/ha-cluster
+      endpointURL: https://s3.amazonaws.com
+      s3Credentials:
+        accessKeyId:
+          name: backup-s3-credentials
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: backup-s3-credentials
+          key: SECRET_ACCESS_KEY
+      wal:
+        retention: "7d"
+      data:
+        retention: "30d"
+      schedule:
+        - "00 02 * * *"  # Codziennie o 2:00
+  
+  # Monitoring
+  monitoring:
+    enabled: true
+    podMonitorEnabled: true
+  
+  # Dane dostępowe
+  bootstrap:
+    initdb:
+      database: myapp
+      owner: myapp
+      secret:
+        name: postgres-ha-credentials
+  
+  # Resources
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"
+
+---
+# Secret dla HA cluster
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-ha-credentials
+  namespace: postgres
+type: Opaque
+stringData:
+  username: myapp
+  password: myapp-secure-password
+  _pgbouncer_pooler_password: pooler-password
+
+---
+# Secret dla S3 backup (przykład - w produkcji użyj external secrets!)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backup-s3-credentials
+  namespace: postgres
+type: Opaque
+stringData:
+  ACCESS_KEY_ID: "your-access-key"
+  SECRET_ACCESS_KEY: "your-secret-key"
+

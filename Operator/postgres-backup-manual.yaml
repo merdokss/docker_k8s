@@ -1,0 +1,15 @@
+# Ręczny backup klastra PostgreSQL
+# Uruchom: kubectl apply -f postgres-backup-manual.yaml
+# UWAGA: Zmień nazwę backupu na unikalną przed zastosowaniem!
+
+apiVersion: postgresql.cnpg.io/v1
+kind: Backup
+metadata:
+  name: backup-manual-20240115  # Zmień na unikalną nazwę z datą/czasem
+  namespace: postgres
+spec:
+  cluster:
+    name: postgres-ha  # Nazwa klastra do backupu
+  method: barmanObjectStore
+  # Backup zostanie zapisany w konfiguracji klastra
+
