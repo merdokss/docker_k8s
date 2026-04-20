@@ -37,7 +37,7 @@ def init_db():
             
         except OperationalError:
             if attempt < max_retries - 1:
-                print(f"Nie można połączyć się z bazą danych. Próba {attempt + 1} z {max_retries}. Czekam {retry_interval} sekund...")
+                print(f"Nie można połączyć się z bazą danych. Próba 123 {attempt + 1} z {max_retries}. Czekam {retry_interval} sekund...")
                 time.sleep(retry_interval)
             else:
                 raise
