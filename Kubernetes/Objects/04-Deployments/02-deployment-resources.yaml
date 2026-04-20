@@ -24,7 +24,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /
-            port: 88
+            port: 80
           initialDelaySeconds: 20
           periodSeconds: 5
         livenessProbe:
