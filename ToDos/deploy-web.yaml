@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todos-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      imagePullSecrets:
+      - name: external-registry
+      containers:
+      - name: web
+        image: dawidsages.azurecr.io/todo-pf-web:latest
+        ports:
+        - containerPort: 3000
+        # resources:
+        #   requests:
+        #     memory: "64Mi"
+        #     cpu: "50m"
+        #   limits:
+        #     memory: "128Mi"
+        #     cpu: "500m"
+        # readinessProbe:
+        #   httpGet:
+        #     path: /
+        #     port: 3000
+        #   initialDelaySeconds: 3
+        #   periodSeconds: 5
+        # livenessProbe:
+        #   httpGet:
+        #     path: /
+        #     port: 3000
+        #   initialDelaySeconds: 10
+        #   periodSeconds: 10
+        env:
+        - name: REACT_APP_API_URL
+          value: "http://localhost:32013/api"
