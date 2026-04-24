@@ -1,0 +1,20 @@
+# VaultAuth – definiuje jak VSO uwierzytelnia się do Vault
+# VSO użyje ServiceAccount "myapp" w namespace "demo-app"
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: default
+  namespace: demo-app
+spec:
+  # Metoda uwierzytelnienia
+  method: kubernetes
+  # Mount path Kubernetes Auth Method w Vault
+  mount: kubernetes
+  kubernetes:
+    # ServiceAccount używany do uwierzytelnienia
+    serviceAccount: myapp
+    # Rola Vault (musi mieć politykę z dostępem do sekretów)
+    role: myapp
+    # Audiences dla SA Token (domyślnie vault)
+    audiences:
+      - vault

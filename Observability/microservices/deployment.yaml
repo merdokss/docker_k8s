@@ -20,6 +20,8 @@ spec:
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
     spec:
+      imagePullSecrets:
+      - name: external-registry
       containers:
       - name: app
         image: dawidsages.azurecr.io/frontend-service:latest
@@ -92,6 +94,8 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
     spec:
+      imagePullSecrets:
+      - name: external-registry
       containers:
       - name: app
         image: dawidsages.azurecr.io/service-a:latest
@@ -167,6 +171,8 @@ spec:
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
     spec:
+      imagePullSecrets:
+      - name: external-registry
       containers:
       - name: app
         image: dawidsages.azurecr.io/service-b:latest
@@ -239,6 +245,8 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
     spec:
+      imagePullSecrets:
+      - name: external-registry
       containers:
       - name: app
         image: dawidsages.azurecr.io/service-c:latest

@@ -60,6 +60,14 @@ helm upgrade --install loki grafana/loki \
   --timeout 10m
 
 echo ""
+echo -e "${BLUE}📦 Instalacja Promtail (agent logów)...${NC}"
+helm upgrade --install promtail grafana/promtail \
+  --namespace ${NAMESPACE} \
+  --values ${SCRIPT_DIR}/promtail-values.yaml \
+  --wait \
+  --timeout 5m
+
+echo ""
 echo -e "${BLUE}🔧 Konfiguracja datasources Grafana...${NC}"
 kubectl apply -f ${SCRIPT_DIR}/grafana-datasources.yaml
 

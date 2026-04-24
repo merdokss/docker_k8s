@@ -1,0 +1,22 @@
+# Helm values dla Vault Secrets Operator
+# Dokumentacja: https://developer.hashicorp.com/vault/docs/platform/k8s/vso
+
+defaultVaultConnection:
+  # Adres Vault – dostępny wewnątrz klastra
+  address: "http://vault.vault.svc:8200"
+  # Włącz domyślne połączenie
+  enabled: true
+
+controller:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+# Metryki Prometheus (opcjonalnie)
+metricsService:
+  enabled: false

@@ -13,15 +13,6 @@ data:
   datasources.yaml: |
     apiVersion: 1
     datasources:
-      - name: Prometheus
-        type: prometheus
-        access: proxy
-        url: http://prometheus-stack-kube-prom-prometheus:9090
-        uid: prometheus
-        isDefault: true
-        jsonData:
-          timeInterval: "30s"
-      
       - name: Loki
         type: loki
         access: proxy

@@ -17,6 +17,7 @@ prometheus:
     ruleSelectorNilUsesHelmValues: false
     serviceMonitorNamespaceSelector: {}
     podMonitorNamespaceSelector: {}
+    enableRemoteWriteReceiver: true
 
 # Grafana konfiguracja
 grafana:

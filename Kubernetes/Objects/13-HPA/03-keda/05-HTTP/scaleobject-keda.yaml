@@ -1,0 +1,16 @@
+apiVersion: http.keda.sh/v1alpha1
+kind: HTTPScaledObject
+metadata:
+  name: http-demo
+  namespace: default
+spec:
+  hosts:
+    - dawid-test.pl
+  targetPendingRequests: 5
+  scaleTargetRef:
+    name: nginx-keda       # ← Deployment
+    service: nginx-keda    # ← Service (wymagane)
+    port: 88
+  replicas:
+    min: 0
+    max: 10

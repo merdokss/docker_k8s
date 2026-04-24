@@ -1,0 +1,14 @@
+# Values dla Grafana Promtail
+# Instalacja: helm install promtail grafana/promtail -n monitoring -f promtail-values.yaml
+
+config:
+  clients:
+    - url: http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

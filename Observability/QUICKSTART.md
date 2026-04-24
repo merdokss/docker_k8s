@@ -1,146 +1,105 @@
-# 🚀 Szybki Start - Stack Observability
+# Szybki Start - Stack Observability
 
-## Instalacja (5 minut)
-
-### 1. Zainstaluj stack observability
+## Instalacja
 
 ```bash
 cd Observability
 ./install.sh
 ```
 
-### 2. Zbuduj i zainstaluj przykładową aplikację
+Skrypt instaluje: Prometheus + Grafana, Tempo, Loki, Promtail i konfiguruje datasources.
 
-```bash
-cd example-app
-./build.sh
-kubectl apply -f deployment.yaml
-```
-
-### 3. Dostęp do Grafana
-
-Grafana jest dostępna przez LoadBalancer:
+## Dostęp do Grafana
 
 ```bash
 kubectl get svc -n monitoring prometheus-stack-grafana
+# Otwórz EXTERNAL-IP w przeglądarce
 ```
-
-Otwórz przeglądarkę na adresie z kolumny `EXTERNAL-IP` (np. http://4.245.142.179)
-
-**Alternatywa - port-forward:**
-```bash
-kubectl port-forward -n monitoring svc/prometheus-stack-grafana 3000:80
-```
-Otwórz: http://localhost:3000
 
 - **Username**: `admin`
 - **Password**: `admin123`
 
-## 🎯 Szybkie testy
-
-### Generuj load na aplikację
+## Uruchomienie aplikacji demo
 
 ```bash
-# W osobnym terminalu
-kubectl run -it --rm load-gen --image=curlimages/curl --restart=Never -- \
-  sh -c 'while true; do curl -s http://example-app.default.svc.cluster.local:8080/api/hello?name=Test; sleep 0.5; done'
+kubectl apply -f microservices/deployment.yaml
 ```
 
-### Sprawdź metryki w Prometheus
+### Generowanie ruchu (traces)
 
 ```bash
-kubectl port-forward -n monitoring svc/prometheus-stack-kube-prom-prometheus 9090:9090
+kubectl run load-generator --image=curlimages/curl --restart=Never -- \
+  sh -c 'i=0; while true; do i=$((i+1));
+    curl -s "http://frontend-service.default.svc.cluster.local:8080/api/order?order_id=test-$i" > /dev/null;
+    curl -s "http://frontend-service.default.svc.cluster.local:8080/api/user?user_id=user-$i" > /dev/null;
+    sleep 1; done'
+
+# Zatrzymaj
+kubectl delete pod load-generator
 ```
 
-Otwórz: http://localhost:9090
+## Gdzie szukać danych w Grafana
 
-Przykładowe zapytania:
-- `rate(http_requests_total[5m])`
-- `histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))`
-- `active_connections`
+| Co | Gdzie |
+|----|-------|
+| Metryki klastra | Dashboards → Kubernetes / Compute Resources |
+| Logi | Explore → Loki → `{namespace="default"}` |
+| Traces | Explore → Tempo → Search → service: `frontend-service` |
+| Service Map | Explore → Tempo → Service Graph |
 
-### Sprawdź logi w Grafana
-
-1. Otwórz Grafana (http://localhost:3000)
-2. Przejdź do **Explore** (ikona kompasu)
-3. Wybierz datasource: **Loki**
-4. Wpisz zapytanie: `{app="example-app"}`
-
-### Sprawdź traces w Grafana
-
-1. W Grafana **Explore**
-2. Wybierz datasource: **Tempo**
-3. Wyszukaj po service: `example-app`
-4. Kliknij na trace, aby zobaczyć szczegóły
-
-## 📊 Co zobaczysz?
-
-### Metryki (Prometheus)
-- Liczba requestów HTTP
-- Czas wykonania requestów
-- Aktywne połączenia
-- Operacje biznesowe
-
-### Logi (Loki)
-- Strukturalne logi JSON z aplikacji
-- Logi z wszystkich podów Kubernetes
-- Możliwość filtrowania po labelach
-
-### Traces (Tempo)
-- Śledzenie requestów przez aplikację
-- Czas wykonania każdej operacji
-- Zależności między serwisami
-- Integracja z logami (kliknięcie w trace pokazuje powiązane logi)
-
-## 🔍 Przykładowe zapytania
+## Przykładowe zapytania
 
 ### Prometheus
-
 ```promql
-# Rate requestów
+# Liczba requestów HTTP do mikroserwisów
 rate(http_requests_total[5m])
 
-# 95th percentile czasu wykonania
+# 95. percentyl czasu odpowiedzi
 histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
-
-# Błędy
-rate(http_requests_total{status="500"}[5m])
 ```
 
 ### Loki
-
 ```logql
-# Wszystkie logi z aplikacji
-{app="example-app"}
+# Logi z mikroserwisów
+{namespace="default", app="frontend-service"}
 
 # Tylko błędy
-{app="example-app"} |= "ERROR"
+{namespace="default"} |= "ERROR"
 
-# Logi z konkretnego endpointu
-{app="example-app"} | json | endpoint="/api/calculate"
+# Logi z konkretnego order_id
+{app="frontend-service"} | json | order_id="test-1"
 ```
 
-### Tempo
+### Tempo (TraceQL)
+```
+# Wszystkie trace'y frontend-service
+{resource.service.name="frontend-service"}
 
-- Service name: `example-app`
-- Tag search: `http.method=GET`
-- TraceID: (z logów Loki)
+# Tylko wolne spany (> 100ms)
+{resource.service.name="frontend-service"} | duration > 100ms
 
-## 🎓 Ćwiczenia
+# Cały łańcuch dla konkretnego order_id
+{span.order.id="test-1"}
+```
 
-1. **Metryki**: Stwórz alert w Prometheus dla wysokiego czasu odpowiedzi
-2. **Logi**: Znajdź wszystkie błędy z ostatniej godziny
-3. **Traces**: Prześledź request od początku do końca
-4. **Dashboard**: Stwórz własny dashboard w Grafana łączący metryki, logi i traces
-
-## 🧹 Czyszczenie
+## Sprawdzenie stanu
 
 ```bash
-# Usuń aplikację
-kubectl delete -f example-app/deployment.yaml
+# Status podów
+kubectl get pods -n monitoring
 
-# Usuń stack
-helm uninstall loki tempo prometheus-stack -n monitoring
-kubectl delete namespace monitoring
+# Czy Loki odbiera logi
+kubectl logs -n monitoring -l app.kubernetes.io/name=promtail --tail=5
+
+# Czy Tempo odbiera traces
+kubectl logs -n monitoring tempo-0 --tail=10
 ```
 
+## Czyszczenie
+
+```bash
+kubectl delete pod load-generator --ignore-not-found
+kubectl delete -f microservices/deployment.yaml
+helm uninstall promtail loki tempo prometheus-stack -n monitoring
+kubectl delete namespace monitoring
+```

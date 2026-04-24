@@ -57,7 +57,18 @@ Każdy serwis:
 
 ## 🚀 Instalacja
 
-### 1. Zbuduj obrazy Docker
+### 1. Przygotuj multi-platform builder (wymagane raz)
+
+Domyślny driver Dockera nie obsługuje multi-platform builds. Utwórz builder z odpowiednim driverem:
+
+```bash
+docker buildx create --name multiarch --driver docker-container --use
+docker buildx inspect --bootstrap
+```
+
+> **Dlaczego multi-platform?** Klastry Kubernetes zazwyczaj działają na `linux/amd64` (x86_64), natomiast Mac z Apple Silicon buduje obrazy domyślnie dla `linux/arm64`. Bez flagi `--platform` pod skończy się błędem `exec format error`.
+
+### 2. Zbuduj i wypchnij obrazy Docker
 
 ```bash
 cd microservices
@@ -65,38 +76,32 @@ chmod +x build.sh
 ./build.sh
 ```
 
-Lub zbuduj każdy serwis osobno:
+Lub zbuduj każdy serwis osobno (build + push w jednym kroku):
 
 ```bash
 # Frontend Service
 cd frontend-service
-docker build -t dawidsages.azurecr.io/frontend-service:latest .
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t dawidsages.azurecr.io/frontend-service:latest --push .
 cd ..
 
 # Service A
 cd service-a
-docker build -t dawidsages.azurecr.io/service-a:latest .
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t dawidsages.azurecr.io/service-a:latest --push .
 cd ..
 
 # Service B
 cd service-b
-docker build -t dawidsages.azurecr.io/service-b:latest .
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t dawidsages.azurecr.io/service-b:latest --push .
 cd ..
 
 # Service C
 cd service-c
-docker build -t dawidsages.azurecr.io/service-c:latest .
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t dawidsages.azurecr.io/service-c:latest --push .
 cd ..
-```
-
-### 2. Wypchnij obrazy do registry (opcjonalnie)
-
-```bash
-docker login dawidsages.azurecr.io
-docker push dawidsages.azurecr.io/frontend-service:latest
-docker push dawidsages.azurecr.io/service-a:latest
-docker push dawidsages.azurecr.io/service-b:latest
-docker push dawidsages.azurecr.io/service-c:latest
 ```
 
 ### 3. Zainstaluj w Kubernetes

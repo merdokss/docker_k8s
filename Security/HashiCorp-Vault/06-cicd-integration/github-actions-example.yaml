@@ -1,0 +1,94 @@
+# Przykład integracji GitHub Actions z HashiCorp Vault
+# Użycie: skopiuj do .github/workflows/deploy.yml w swoim repo
+#
+# Wymagania wstępne w Vault:
+#   vault auth enable jwt
+#   vault write auth/jwt/config oidc_discovery_url="https://token.actions.githubusercontent.com" bound_issuer="https://token.actions.githubusercontent.com"
+#   vault policy write github-actions-policy - <<EOF
+#     path "secret/data/myapp/*" { capabilities = ["read"] }
+#   EOF
+#   vault write auth/jwt/role/github-myrepo \
+#     role_type=jwt bound_claims_type=glob \
+#     bound_claims='{"sub":"repo:TWOJA_ORG/TWOJE_REPO:*"}' \
+#     user_claim=sub policies=github-actions-policy ttl=15m
+#
+# Wymagania wstępne w GitHub:
+#   Settings → Secrets and variables → Variables → New repository variable:
+#     VAULT_ADDR = https://vault.example.com
+
+name: Deploy z Vault Secrets
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    # KLUCZOWE: permissions wymagane dla OIDC JWT token
+    permissions:
+      id-token: write   # generowanie JWT OIDC token
+      contents: read    # checkout repo
+
+    # Opcjonalnie: użyj GitHub Environments dla dodatkowej kontroli
+    # environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Pobierz sekrety z Vault przy użyciu OIDC (bez statycznego tokenu!)
+      - name: Import Secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@v3
+        with:
+          # Adres Vault (ustaw jako GitHub Variable, nie Secret)
+          url: ${{ vars.VAULT_ADDR }}
+
+          # Metoda uwierzytelnienia: JWT/OIDC
+          method: jwt
+
+          # Rola Vault (musi być skonfigurowana w Vault)
+          role: github-myrepo
+
+          # Sekrety do pobrania: "ścieżka klucz | NAZWA_ENV"
+          secrets: |
+            secret/data/myapp/config db_password | DB_PASSWORD ;
+            secret/data/myapp/config api_key     | API_KEY     ;
+            secret/data/myapp/config registry_password | REGISTRY_PASSWORD
+
+      # Sekrety są teraz dostępne jako zmienne środowiskowe
+      # GitHub Actions automatycznie maskuje ich wartości w logach!
+      - name: Build Docker Image
+        run: |
+          echo "$REGISTRY_PASSWORD" | docker login registry.example.com -u myapp --password-stdin
+          docker build \
+            --build-arg DB_PASSWORD="$DB_PASSWORD" \
+            -t registry.example.com/myapp:${{ github.sha }} .
+        env:
+          DB_PASSWORD: ${{ env.DB_PASSWORD }}
+          REGISTRY_PASSWORD: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: Deploy to Kubernetes
+        run: |
+          # Wstrzyknij sekret jako K8s Secret przed deployem
+          kubectl create secret generic myapp-config \
+            --from-literal=db_password="$DB_PASSWORD" \
+            --from-literal=api_key="$API_KEY" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl rollout restart deployment/myapp
+        env:
+          DB_PASSWORD: ${{ env.DB_PASSWORD }}
+          API_KEY: ${{ env.API_KEY }}
+
+      # Zawsze odwołaj Vault Token po zakończeniu (bezpieczeństwo)
+      - name: Revoke Vault Token
+        if: always()
+        run: vault token revoke -self
+        env:
+          VAULT_ADDR: ${{ vars.VAULT_ADDR }}
+          VAULT_TOKEN: ${{ steps.secrets.outputs.token }}
+        continue-on-error: true

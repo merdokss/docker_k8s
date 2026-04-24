@@ -1,0 +1,103 @@
+# Przykład integracji GitLab CI z HashiCorp Vault
+# Użycie: skopiuj do .gitlab-ci.yml w swoim projekcie
+#
+# Wymagania wstępne w Vault:
+#   vault auth enable jwt
+#   vault write auth/jwt/config \
+#     oidc_discovery_url="https://gitlab.com" \
+#     bound_issuer="https://gitlab.com"
+#   vault policy write gitlab-ci-policy - <<EOF
+#     path "secret/data/myapp/*" { capabilities = ["read"] }
+#   EOF
+#   vault write auth/jwt/role/gitlab-myproject \
+#     role_type=jwt \
+#     bound_claims='{"project_path":"TWOJA_GRUPA/TWOJ_PROJEKT","ref_type":"branch","ref":"main"}' \
+#     user_claim=sub \
+#     policies=gitlab-ci-policy \
+#     ttl=15m
+#
+# Wymagania wstępne w GitLab:
+#   Settings → CI/CD → Variables:
+#     VAULT_ADDR = https://vault.example.com  (Variable, nie Secret)
+
+stages:
+  - build
+  - deploy
+
+# Szablon – pobierz sekrety z Vault przez JWT OIDC
+.vault-secrets: &vault-secrets
+  before_script:
+    # GitLab generuje CI_JOB_JWT_V2 automatycznie (OIDC token)
+    - |
+      echo "==> Logowanie do Vault przez JWT OIDC..."
+      VAULT_TOKEN=$(vault write -field=token auth/jwt/login \
+        role=gitlab-myproject \
+        jwt=$CI_JOB_JWT_V2)
+      export VAULT_TOKEN
+
+    # Odczytaj sekrety z Vault
+    - |
+      echo "==> Pobieranie sekretów z Vault..."
+      export DB_PASSWORD=$(vault kv get -field=db_password secret/myapp/config)
+      export API_KEY=$(vault kv get -field=api_key secret/myapp/config)
+      # Zamaskuj sekrety w logach GitLab
+      echo "DB_PASSWORD=$DB_PASSWORD" >> /dev/null  # NIE loguj sekretów!
+
+  after_script:
+    # Zawsze odwołaj token po zakończeniu joba
+    - vault token revoke -self || true
+
+build:
+  stage: build
+  image: vault:latest
+  <<: *vault-secrets
+  script:
+    - echo "==> Build z sekretami z Vault"
+    # DB_PASSWORD i API_KEY są dostępne jako env vars
+    - docker build --build-arg DB_PASSWORD="$DB_PASSWORD" -t myapp:$CI_COMMIT_SHA .
+  only:
+    - main
+    - merge_requests
+
+deploy-staging:
+  stage: deploy
+  image: vault:latest
+  <<: *vault-secrets
+  environment:
+    name: staging
+  script:
+    - echo "==> Deploy do staging"
+    - kubectl create secret generic myapp-config \
+        --from-literal=db_password="$DB_PASSWORD" \
+        --from-literal=api_key="$API_KEY" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl rollout restart deployment/myapp -n staging
+  only:
+    - main
+
+deploy-production:
+  stage: deploy
+  image: vault:latest
+  # Produkcja wymaga osobnej roli Vault z bardziej restrykcyjnymi claims
+  before_script:
+    - |
+      VAULT_TOKEN=$(vault write -field=token auth/jwt/login \
+        role=gitlab-production \
+        jwt=$CI_JOB_JWT_V2)
+      export VAULT_TOKEN
+    - export DB_PASSWORD=$(vault kv get -field=db_password secret/myapp-prod/config)
+    - export API_KEY=$(vault kv get -field=api_key secret/myapp-prod/config)
+  after_script:
+    - vault token revoke -self || true
+  environment:
+    name: production
+  script:
+    - echo "==> Deploy do produkcji"
+    - kubectl create secret generic myapp-config \
+        --from-literal=db_password="$DB_PASSWORD" \
+        --from-literal=api_key="$API_KEY" \
+        --dry-run=client -o yaml | kubectl apply -n production -f -
+    - kubectl rollout restart deployment/myapp -n production
+  when: manual  # Wymaga ręcznego zatwierdzenia
+  only:
+    - main

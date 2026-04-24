@@ -11,10 +11,11 @@ MetalLB to implementacja równoważnika obciążenia (load balancer) przeznaczon
 3. [Wymagania](#wymagania)
 4. [Tryby działania](#tryby-działania)
 5. [Instalacja](#instalacja)
-6. [Konfiguracja](#konfiguracja)
-7. [Przykłady użycia](#przykłady-użycia)
-8. [Rozwiązywanie problemów](#rozwiązywanie-problemów)
-9. [Porównanie z alternatywami](#porównanie-z-alternatywami)
+6. [Skąd wziąć adresy IP do puli?](#skąd-wziąć-adresy-ip-do-puli)
+7. [Konfiguracja](#konfiguracja)
+8. [Przykłady użycia](#przykłady-użycia)
+9. [Rozwiązywanie problemów](#rozwiązywanie-problemów)
+10. [Porównanie z alternatywami](#porównanie-z-alternatywami)
 
 ---
 
@@ -108,12 +109,35 @@ MetalLB oferuje **dwa tryby działania**, różniące się mechanizmem ogłaszan
 
 ### Tryb Layer 2 (L2)
 
-**Jak działa:**
+**Na czym polega "Layer 2"?**
 
-1. Jeden węzeł klastra przejmuje odpowiedzialność za usługę
-2. Węzeł odpowiada na zapytania **ARP** (IPv4) lub **NDP** (IPv6)
-3. Z perspektywy sieci wygląda jakby węzeł miał wiele adresów IP
-4. W przypadku awarii węzła, inny węzeł przejmuje odpowiedzialność
+Layer 2 odnosi się do warstwy łącza danych w modelu OSI — MetalLB działa na poziomie protokołu **ARP** (Address Resolution Protocol), który mapuje adresy IP na adresy MAC w obrębie jednej sieci lokalnej. Nie wymaga routerów ze specjalnymi możliwościami — wystarcza zwykły switch lub router domowy.
+
+**Jak działa krok po kroku:**
+
+```
+Klient chce połączyć się z 192.168.1.245 (External IP usługi)
+         │
+         ▼
+[Klient wysyła ARP broadcast]
+"Kto ma adres 192.168.1.245? Podaj mi swój MAC!"
+         │
+         ▼
+[MetalLB speaker na węźle "leader" odpowiada]
+"To ja! Mój MAC to aa:bb:cc:dd:ee:ff"
+         │
+         ▼
+[Klient wysyła pakiet na MAC węzła]
+         │
+         ▼
+[Węzeł odbiera pakiet i przekazuje go do odpowiedniego Poda przez kube-proxy]
+```
+
+**Kluczowe konsekwencje tego mechanizmu:**
+- Adresy IP z puli MetalLB **muszą być w tej samej podsieci** co węzły klastra (ARP działa tylko lokalnie, nie przechodzi przez routery)
+- Jeden węzeł ("leader") przejmuje odpowiedzialność za dany adres IP
+- Ruch trafia zawsze do jednego węzła — kube-proxy dopiero potem rozdziela go między Pody
+- W razie awarii węzła inny speaker przejmuje adres (po ~10 sekundach — tyle trwa wygaśnięcie ARP cache)
 
 **Zalety:**
 - ✅ Prosta konfiguracja
@@ -129,12 +153,33 @@ MetalLB oferuje **dwa tryby działania**, różniące się mechanizmem ogłaszan
 
 ### Tryb BGP
 
-**Jak działa:**
+**Na czym polega tryb BGP?**
 
-1. Każdy węzeł klastra nawiązuje sesję **BGP** z routerami
-2. Węzły ogłaszają adresy IP usług przez protokół BGP
-3. Routery kierują ruch do wszystkich węzłów
-4. Prawdziwe równoważenie obciążenia na poziomie sieci
+BGP (Border Gateway Protocol) to protokół routingu używany w internecie do wymiany informacji o trasach między sieciami. W trybie BGP każdy węzeł klastra ogłasza routerom "znam trasę do tych adresów IP". Router kieruje ruch do **wszystkich węzłów jednocześnie** — to prawdziwe równoważenie obciążenia na poziomie sieci.
+
+**Jak działa krok po kroku:**
+
+```
+[Każdy węzeł nawiązuje sesję BGP z routerem]
+Węzeł-1: "Mam trasę do 10.0.0.100-200 przez mnie"
+Węzeł-2: "Mam trasę do 10.0.0.100-200 przez mnie"
+Węzeł-3: "Mam trasę do 10.0.0.100-200 przez mnie"
+         │
+         ▼
+[Router zna 3 trasy do tej samej puli IP]
+         │
+         ▼
+[Klient wysyła pakiet do 10.0.0.150]
+         │
+         ▼
+[Router rozdziela ruch ECMP między węzły-1, węzeł-2, węzeł-3]
+```
+
+**Kluczowe konsekwencje:**
+- Wymaga routera obsługującego BGP (nie każdy router domowy to potrafi)
+- Adresy IP z puli **nie muszą być** w tej samej podsieci co węzły
+- Wszystkie węzły aktywnie obsługują ruch równolegle
+- Failover jest natychmiastowy (router przestaje używać trasy przez awaryiny węzeł)
 
 **Zalety:**
 - ✅ Prawdziwe równoważenie obciążenia
@@ -299,6 +344,80 @@ kubectl apply -k .
 | **Manifesty** | ✅ Proste, bez zależności<br>✅ Oficjalna metoda<br>✅ Łatwe do debugowania | ⚠️ Ręczna aktualizacja | Wszystkich użytkowników |
 | **Helm** | ✅ Łatwe zarządzanie wersjami<br>✅ Parametryzacja<br>✅ Upgrade/downgrade | ⚠️ Wymaga Helm<br>⚠️ Dodatkowa warstwa abstrakcji | Środowisk produkcyjnych z Helm |
 | **Kustomize** | ✅ GitOps friendly<br>✅ Łatwe override'y | ⚠️ Wymaga Kustomize<br>⚠️ Mniej popularne | Zaawansowanych użytkowników |
+
+---
+
+## Skąd wziąć adresy IP do puli?
+
+To jedno z pierwszych pytań przy konfiguracji MetalLB. Odpowiedź zależy od trybu i środowiska.
+
+### Zasada dla trybu Layer 2 (najczęstszy przypadek lokalnie)
+
+**Adresy w puli muszą spełniać dwa warunki:**
+1. Być w **tej samej podsieci** co węzły Kubernetes (bo ARP działa tylko lokalnie)
+2. Być **wolne** — nieprzypisane do żadnego urządzenia ani przez DHCP
+
+```bash
+# Krok 1: sprawdź adresy węzłów
+kubectl get nodes -o wide
+# NAME     STATUS   INTERNAL-IP    ...
+# node-1   Ready    192.168.1.10   ← jesteś w sieci 192.168.1.0/24
+# node-2   Ready    192.168.1.11
+
+# Krok 2: wybierz zakres z końca tej samej podsieci
+# Końcówka zakresu (.240-.250) zazwyczaj jest poza pulą DHCP routera
+# → pula MetalLB: 192.168.1.240-192.168.1.250
+```
+
+> **Dlaczego końcówka zakresu?** Domowy router domyślnie przydziela DHCP od początku (np. `.100`–`.200`). Końcówka (`.240`–`.250`) jest zazwyczaj wolna. Możesz też jawnie ustawić w routerze "exclusion range" dla adresów MetalLB.
+
+**Przed wdrożeniem sprawdź, czy adresy są rzeczywiście wolne:**
+
+```bash
+# Sprawdź czy adres jest zajęty (brak odpowiedzi = wolny)
+ping -c 2 192.168.1.245
+arp -a | grep 192.168.1.24
+```
+
+### Adresy IP dla popularnych środowisk lokalnych
+
+#### Kind
+
+```bash
+# Sprawdź podsieć sieci Kind (Docker)
+docker network inspect kind | grep Subnet
+# "Subnet": "172.18.0.0/16"
+
+# Pula MetalLB dla Kind:
+# 172.18.255.200-172.18.255.250
+# (górny fragment sieci /16, z dala od adresów węzłów)
+```
+
+#### Minikube
+
+```bash
+# Sprawdź adres IP Minikube
+minikube ip
+# 192.168.49.2  ← węzeł jest w sieci 192.168.49.0/24
+
+# Pula MetalLB dla Minikube:
+# 192.168.49.100-192.168.49.120
+```
+
+#### K3s / kubeadm na VM-ach w sieci domowej
+
+```bash
+# Sprawdź adres i maskę węzła
+ip addr show eth0
+# inet 192.168.1.20/24  ← sieć 192.168.1.0/24
+
+# Pula MetalLB:
+# 192.168.1.240-192.168.1.250
+```
+
+### Zasada dla trybu BGP
+
+W trybie BGP adresy IP z puli **nie muszą być** w podsieci węzłów — router zna trasę do nich przez BGP. Typowo używa się osobnego zakresu dedykowanego dla usług, np. `10.0.0.100-10.0.0.200`, który router ogłasza dalej do internetu lub sieci firmowej.
 
 ---
 

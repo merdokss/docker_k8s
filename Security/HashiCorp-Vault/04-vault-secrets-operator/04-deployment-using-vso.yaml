@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-vso
+  namespace: demo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp-vso
+  template:
+    metadata:
+      labels:
+        app: myapp-vso
+    spec:
+      serviceAccountName: myapp
+      containers:
+        - name: app
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== Sekrety z Vault (przez K8s Secret + VSO) ==="
+              echo "DB_PASSWORD=$DB_PASSWORD"
+              echo "API_KEY=$API_KEY"
+              echo ""
+              echo "=== Aplikacja działa ==="
+              while true; do
+                echo "$(date) – db_password length: ${#DB_PASSWORD}"
+                sleep 30
+              done
+          env:
+            # Zmienne środowiskowe z K8s Secret (zsynchronizowanego przez VSO)
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: myapp-config
+                  key: db_password
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: myapp-config
+                  key: api_key
+          # Alternatywnie: załaduj wszystkie klucze z Secret jako env vars
+          # envFrom:
+          #   - secretRef:
+          #       name: myapp-config
+          resources:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 64Mi
+              cpu: 50m
