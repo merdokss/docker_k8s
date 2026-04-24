@@ -1,0 +1,103 @@
+# Default values for todos-be-dawid.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: dawidsages.azurecr.io/cezary-api
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets:
+  - name: azurecr
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Resource names - if not set, will use fullname
+deploymentName: "todos-be"
+serviceName: "todos-api"
+ingressName: "todos-ingress"
+
+# App label for selector
+appLabel: api
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 3001
+  targetPort: 3001
+
+containerPort: 3001
+
+# Liveness probe configuration
+livenessProbe:
+  enabled: true
+  path: /api
+  port: 3001
+  initialDelaySeconds: 20
+  periodSeconds: 5
+
+# Environment variables (additional to MONGODB_URI which is added automatically if mongodbSecret.create is true)
+env: []
+
+# MongoDB Secret configuration
+mongodbSecret:
+  create: true
+  name: mongodb-secret
+  mongodbUri: ""
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: dawidapp.mooo.com
+      paths:
+        - path: /api
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 1m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
